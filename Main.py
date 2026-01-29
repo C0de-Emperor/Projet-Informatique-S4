@@ -1,4 +1,5 @@
 from Mathematics import DiscretefunctionFromImage, DiscreteFunction
+from Methods import *
 import time
 
 a = time.time()
