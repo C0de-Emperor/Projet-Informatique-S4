@@ -1,16 +1,23 @@
-from Mathematics import DiscretefunctionFromImage, DiscreteFunction, FourierTransform
+from Mathematics import *
 from Methods import *
 import time
+
+
+
+
 
 a = time.time()
 
 f = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
 
+
+h = GaussianDiscreteFunction(1)
+
 b = time.time()
 print(f"convertion : {b - a}s")
 print(f"convertion : {(b - a)/(f.width * f.height)}s per px")
 
-
+"""
 h = DiscreteFunction(
     [
         [0, 1, 0],
@@ -22,8 +29,9 @@ h = DiscreteFunction(
 )
 
 h.normalize()
+"""
 
-g=f.convolve(h)
+g = f.convolve(h)
 
 c = time.time()
 
