@@ -144,12 +144,21 @@ class DiscreteFunction:
             for j in range(self.height):
                 self[i,j]=(self[i,j]-minV+minValue)*255/maxV
     
-    def medianFilter(self, radius:int=1):
+    def medianFilter(self, radius: int = 1):
+        newKernel = [[0]*self.width for _ in range(self.height)]
+
         for i in range(self.width):
             for j in range(self.height):
-                neighbours=[self[i+k,j+n] for k in range(-radius, radius+1) for n in range(-radius, radius+1)]
+                neighbours = [
+                    self[i+k, j+n]
+                    for k in range(-radius, radius+1)
+                    for n in range(-radius, radius+1)
+                ]
                 neighbours.sort()
-                self[i,j]=neighbours[(len(neighbours)-1)//2]
+                newKernel[j][i] = neighbours[(len(neighbours)-1)//2]
+
+        self.kernel = newKernel
+        return self
 
     def getStandardDeviation(self):
         from math import sqrt
@@ -164,7 +173,12 @@ class DiscreteFunction:
         ) / N
 
         return sqrt(variance)
-    
+
+    def apply(self, func, *args, **kwargs):
+        func(self, *args, **kwargs)
+        return self
+
+
 class DiscretefunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
         import os
@@ -242,6 +256,7 @@ class GaussianDiscreteFunction (DiscreteFunction):
 
 class DiscreteConvertionError(Exception):
     pass
+
 
 def FourierTransform(discreteFunction:DiscreteFunction, rayonMax:int=-1) -> DiscreteFunction:
     mat=[]

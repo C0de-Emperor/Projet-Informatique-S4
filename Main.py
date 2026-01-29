@@ -9,12 +9,27 @@ import time
 
 a = time.time()
 
-f = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
-noising(f, -20, 20)
+#f = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
+# Nouvelle declaration possible
 
-showImageFromDiscreteFunction(f)
+f = (
+    DiscretefunctionFromImage(r'Garden_strawberry.jpg')
+    .apply(saltAndPaperNoising, 0.01)
+    .medianFilter(1)
+)
+
+# ou bien
+
+g = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
+
+g.apply(noising, -10, 10)
+
+showImageFromDiscreteFunction(g)
 
 
+
+
+exit()
 
 h = GaussianDiscreteFunction(0.6)
 
