@@ -25,9 +25,9 @@ print(f"convertion : {(b - a)/(f.width * f.height)}s per px")
 """
 h = DiscreteFunction(
     [
-        [1, 18, 1],
-        [2, -3, 2],
-        [1, 2, -1]
+        [0, 1, 0],
+        [1, 0, -1],
+        [0, -1, 0]
     ],
     x = 0,
     y = 0
@@ -43,24 +43,20 @@ c = time.time()
 print(f"convolution : {c - b}s")
 print(f"convolution : {(c - b)/(f.width * f.height)}s per px")
 
-showImageFromDiscreteFunction(g)
+#showImageFromDiscreteFunction(g)
+#showImageFromDiscreteFunction(f)
 
-'''
-print(getNiveauxGris(input("chemin de l'image ? : "), (0.299, 0.587, 0.114), True))
+#saveDiscreteFunction(f, "jeanClaude.txt")
+#showImageFromDiscreteFunction(loadDiscreteFunction("jeanClaude.txt"))
 
-f = DiscreteFunction(
-    [
-        [255, 40, 30, 20, 10],
-        [39, 38, 138, 130, 12],
-        [7, 210, 186, 1, 1],
-        [200, 210, 186, 1, 1],
-        [100, 210, 186, 1, 1]
-    ],
-    x = 0,
-    y = 0
-)
+#m=DiscreteFunction([[(k+n)/3 for n in range(128)] for k in range(128)], 0, 0)
+#showImageFromDiscreteFunction(m)
+#m.resizeAmplitudeDiscreteFunction()
+#showImageFromDiscreteFunction(m)
 
+Ff=FourierTransform(f, 0)
+saveDiscreteFunction(Ff, "fourier.txt")
+Ff_module=Ff.getModule(True)
+Ff_module.resizeAmplitudeDiscreteFunction()
+showImageFromDiscreteFunction(Ff_module)
 
-
-print(f.convolve(h).kernel)
-'''
