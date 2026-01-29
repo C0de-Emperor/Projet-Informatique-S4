@@ -40,7 +40,7 @@ class DiscreteFunction:
             raise TypeError(f"unsupported operand type(s) for '+' : 'DiscreteFunction' and '{ type(value).__name__}'")
 
     def __mul__(self, value):
-        if type(value) == int:
+        if type(value) == float or type(value) == int:
             return DiscreteFunction([[self[i, j] * value for i in range(self.width)] for j in range(self.height)], x=self.x, y=self.y)
         elif type(value) == DiscreteFunction:
             xMax = min(self.width + self.x , value.width + value.x)
@@ -103,9 +103,10 @@ class DiscreteFunction:
 
         for i in range(self.width):
             for j in range(self.height):
-                norm+=self.__get__([i,j])
-        
-        return self.__mul__(1/norm)
+                norm+=self[i,j]
+
+        newKernel=self*float(1/norm)
+        self.kernel=newKernel.kernel
 
     
 class DiscretefunctionFromImage(DiscreteFunction):
