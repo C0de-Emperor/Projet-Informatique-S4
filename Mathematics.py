@@ -1,9 +1,9 @@
-
+from math import e, pi, atan2, log
 import os
 
 class DiscreteFunction:
-    def __init__(self, kernel:list[list[float]], x:int = 0, y:int = 0):
-        self.kernel: list[list[float]] = kernel
+    def __init__(self, kernel:list[list[complex]], x:int = 0, y:int = 0):
+        self.kernel: list[list[complex]] = kernel
         self.width: int = len(kernel[0])
         self.height: int = len(kernel)
         self.x: int = x
@@ -80,7 +80,7 @@ class DiscreteFunction:
                 
         return True
     
-    def convolve(self, kernel: list[list[float]]):
+    def convolve(self, kernel: list[list[complex]]):
         if type(kernel) != DiscreteFunction:
             raise TypeError
 
@@ -103,10 +103,51 @@ class DiscreteFunction:
 
         for i in range(self.width):
             for j in range(self.height):
-                norm+=self[i,j]
+                norm+=abs(self[i,j])
 
         newKernel=self*float(1/norm)
         self.kernel=newKernel.kernel
+    
+    def getModule(self, logarithmic:bool=True):
+        mat=[]
+
+        for j in range(self.height):
+            mat.append([])
+            for i in range(self.width):
+                if logarithmic: mat[j].append(log(abs(self[i,j])))
+                else: mat[j].append(abs(self[i,j]))
+        
+        return DiscreteFunction(mat, 0, 0)
+
+    def getArgument(self):
+        mat=[]
+
+        for j in range(self.height):
+            mat.append([])
+            for i in range(self.width):
+                mat[j].append(atan2(self[i,j].real, self[i,j].imag))
+        
+        return DiscreteFunction(mat, 0, 0)
+
+    def resizeAmplitudeDiscreteFunction(self, minValue:int=0, maxValue:int=255):
+        minV=float("inf")
+        maxV=float("-inf")
+
+        for i in range(self.width):
+            for j in range(self.height):
+                if self[i,j]>maxV: maxV=self[i,j]
+                if self[i,j]<minV: minV=self[i,j]
+
+        for i in range(self.width):
+            for j in range(self.height):
+                self[i,j]=(self[i,j]-minV+minValue)*255/maxV
+    
+    def medianFilter(self, radius:int=1):
+        for i in range(self.width):
+            for j in range(self.height):
+                neighbours=[self[i+k,j+n] for k in range(-radius, radius+1) for n in range(-radius, radius+1)]
+                neighbours.sort()
+                self[i,j]=neighbours[(len(neighbours)-1)//2]
 
     
 class DiscretefunctionFromImage(DiscreteFunction):
@@ -120,12 +161,12 @@ class DiscretefunctionFromImage(DiscreteFunction):
         self.path: str = path
         self.coeffs: tuple = coeffs
 
-        kernel: list[list[float]] = DiscretefunctionFromImage._GetGrayScaleKernel(path, coeffs)
+        kernel: list[list[complex]] = DiscretefunctionFromImage._GetGrayScaleKernel(path, coeffs)
 
         super().__init__(kernel, x, y)
 
     @staticmethod
-    def _GetGrayScaleKernel(filepath:str, coeffs:tuple=(0.299, 0.587, 0.114), showImage:bool=False) -> list[list[float]]:
+    def _GetGrayScaleKernel(filepath:str, coeffs:tuple=(0.299, 0.587, 0.114), showImage:bool=False) -> list[list[complex]]:
         from PIL import Image
         # coeffs[0], coeffs[1], coeffs[3] sont les coefficients de la combinaison linÃ©aire respectivement de rouge, vert et bleu
 
@@ -148,6 +189,29 @@ class DiscretefunctionFromImage(DiscreteFunction):
 
 class DiscreteConvertionError(Exception):
     pass
+
+def FourierTransform(discreteFunction:DiscreteFunction, rayonMax:int=-1) -> DiscreteFunction:
+    mat=[]
+    for j in range(discreteFunction.height):
+        mat.append([])
+        print(round(j/discreteFunction.height*100, 1), "%")
+        for i in range(discreteFunction.width):
+            value=0
+            if rayonMax>=0:
+                for k in range(i-rayonMax, i+rayonMax+1):
+                    for n in range(j-rayonMax, j+rayonMax+1):
+                        theta=-2*pi*(i*(rayonMax+k)/(2*rayonMax+1)+j*(rayonMax+n)/(2*rayonMax+1))
+                        value+=discreteFunction[k,n]*e**(theta*1j)
+            else:
+                for k in range(discreteFunction.width):
+                    for n in range(discreteFunction.height):
+                        theta=-2*pi*(i*k/discreteFunction.width+j*n/discreteFunction.height)
+                        value+=discreteFunction[k,n]*e**(theta*1j)
+            
+            mat[j].append(value)
+    
+    return DiscreteFunction(mat, 0, 0)
+
 
 
 """
