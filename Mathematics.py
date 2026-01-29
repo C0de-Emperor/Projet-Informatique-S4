@@ -18,7 +18,7 @@ class DiscreteFunction:
             return 0
         return self.kernel[item[1] - self.y][item[0] - self.x]
     
-    def __setitem__(self, item:tuple, value):
+    def __setitem__(self, item:tuple, value: float):
         #item[0] = x
         #item[1] = y
         if not (self.x <= item[0] < self.x + self.width):
@@ -80,7 +80,7 @@ class DiscreteFunction:
                 
         return True
     
-    def convolve(self, kernel):
+    def convolve(self, kernel: list[list[float]]):
         if type(kernel) != DiscreteFunction:
             raise TypeError
 
@@ -134,7 +134,7 @@ class DiscretefunctionFromImage(DiscreteFunction):
             image2.show()
 
         return imageKernel
-    
+
 class DiscreteConvertionError(Exception):
     pass
 

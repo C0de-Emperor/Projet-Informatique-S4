@@ -1,9 +1,31 @@
-from Mathematics import DiscretefunctionFromImage
+from Mathematics import DiscretefunctionFromImage, DiscreteFunction
+import time
 
+a = time.time()
 
 f = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
 
+b = time.time()
+print(f"convertion : {b - a}s")
+print(f"convertion : {(b - a)/(f.width * f.height)}s per px")
 
+
+h = DiscreteFunction(
+    [
+        [1, 2, 1],
+        [2, 3, 2],
+        [1, 2, 1]
+    ],
+    x = 0,
+    y = 0
+)
+
+f.convolve(h)
+
+c = time.time()
+
+print(f"convolution : {c - b}s")
+print(f"convolution : {(c - b)/(f.width * f.height)}s per px")
 
 '''
 print(getNiveauxGris(input("chemin de l'image ? : "), (0.299, 0.587, 0.114), True))
@@ -20,15 +42,7 @@ f = DiscreteFunction(
     y = 0
 )
 
-h = DiscreteFunction(
-    [
-        [1, 3, 1],
-        [2, 3, 2],
-        [1, 2, 1]
-    ],
-    x = 0,
-    y = 0
-)
+
 
 print(f.convolve(h).kernel)
 '''
