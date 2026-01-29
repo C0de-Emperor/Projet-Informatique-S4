@@ -1,6 +1,3 @@
-
-import os
-
 class DiscreteFunction:
     def __init__(self, kernel:list[list[float]], x:int = 0, y:int = 0):
         self.kernel: list[list[float]] = kernel
@@ -80,8 +77,8 @@ class DiscreteFunction:
                 
         return True
     
-    def convolve(self, kernel: list[list[float]]):
-        if type(kernel) != DiscreteFunction:
+    def convolve(self, other: type["DiscreteFunction"]):
+        if not isinstance(other, DiscreteFunction):
             raise TypeError
 
         g = DiscreteFunction(
@@ -92,25 +89,40 @@ class DiscreteFunction:
         for i in range(self.width):
             for j in range(self.height):
                 g[i, j] = sum(
-                    self[i - m, j - n] * kernel[m, n]
-                    for m in range(kernel.width)
-                    for n in range(kernel.height)
+                    self[i - m, j - n] * other[m, n]
+                    for m in range(other.width)
+                    for n in range(other.height)
                 )
         return g
     
     def normalize(self):
-        norm=0
+        norm = sum(sum(row) for row in self.kernel)
 
-        for i in range(self.width):
-            for j in range(self.height):
-                norm+=self[i,j]
+        if norm == 0:
+            raise ValueError("Cannot normalize a kernel with zero sum")
 
-        newKernel=self*float(1/norm)
-        self.kernel=newKernel.kernel
+        self.kernel = [
+            [value / norm for value in row]
+            for row in self.kernel
+        ]
 
+    def getStandardDeviation(self):
+        from math import sqrt
+
+        N = self.width * self.height
+        mean = sum(self[i, j] for j in range(self.height) for i in range(self.width)) / N
+
+        variance = sum(
+            (self[i, j] - mean)**2
+            for j in range(self.height)
+            for i in range(self.width)
+        ) / N
+
+        return sqrt(variance)
     
-class DiscretefunctionFromImage(DiscreteFunction):
+class DiscretefunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
+        import os
 
         if not round(sum(list(coeffs)), 2) == 1:
             raise DiscreteConvertionError(f"The sum of the coefficients for the conversion to grey level must be equal to 1 : {coeffs[0]} + {coeffs[1]} + {coeffs[2]} = {coeffs[0] + coeffs[1] + coeffs[2]} != 1")
@@ -146,8 +158,47 @@ class DiscretefunctionFromImage(DiscreteFunction):
 
         return imageKernel
 
+
+class GaussianDiscreteFunction (DiscreteFunction):
+    def __init__(self, sigma: float, x: int = 0, y: int = 0):
+        from math import pi
+
+        self.sigma: float = sigma
+        self.size: int = int(2*pi*sigma + 1)
+
+        kernel = GaussianDiscreteFunction._GetGaussianKernel(sigma, self.size)
+        super().__init__(kernel, x, y)
+
+    @staticmethod
+    def _GetGaussianKernel(sigma: float, size: int) -> list[list[float]]:
+        from math import pi, exp
+
+        center = size // 2
+        kernel = [[0.0] * size for _ in range(size)]
+        norm = 0.0
+
+        for j in range(size):
+            for i in range(size):
+                dx = i - center
+                dy = j - center
+                value = (1 / (2 * pi * sigma**2)) * exp(
+                    -(dx**2 + dy**2) / (2 * sigma**2)
+                )
+                kernel[j][i] = value
+                norm += value
+
+        # normalize
+        for j in range(size):
+            for i in range(size):
+                kernel[j][i] /= norm
+
+        return kernel
+
+
 class DiscreteConvertionError(Exception):
     pass
+
+
 
 
 """
