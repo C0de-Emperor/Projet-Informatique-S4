@@ -98,6 +98,16 @@ class DiscreteFunction:
                 )
         return g
     
+    def normalize(self):
+        norm=0
+
+        for i in range(self.width):
+            for j in range(self.height):
+                norm+=self.__get__([i,j])
+        
+        return self.__mul__(1/norm)
+
+    
 class DiscretefunctionFromImage(DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
 
