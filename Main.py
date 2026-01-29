@@ -1,5 +1,6 @@
 from Mathematics import *
 from Methods import *
+from Noising import *
 import time
 
 
@@ -9,9 +10,13 @@ import time
 a = time.time()
 
 f = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
+noising(f, -20, 20)
+
+showImageFromDiscreteFunction(f)
 
 
-h = GaussianDiscreteFunction(1)
+
+h = GaussianDiscreteFunction(0.6)
 
 b = time.time()
 print(f"convertion : {b - a}s")
