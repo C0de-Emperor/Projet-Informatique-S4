@@ -2,15 +2,17 @@ from Mathematics import *
 from Methods import *
 from Noising import *
 import time
+from math import cos, pi
+from numpy import fft
 
 
 
-
+"""
 
 a = time.time()
 
-#f = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
-# Nouvelle declaration possible
+f = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
+randomNoising(f, -20, 20)
 
 f = (
     DiscretefunctionFromImage(r'Garden_strawberry.jpg')
@@ -56,7 +58,7 @@ g = f.convolve(h)
 c = time.time()
 
 print(f"convolution : {c - b}s")
-print(f"convolution : {(c - b)/(f.width * f.height)}s per px")
+print(f"convolution : {(c - b)/(f.width * f.height)}s per px")"""
 
 #showImageFromDiscreteFunction(g)
 #showImageFromDiscreteFunction(f)
@@ -69,9 +71,26 @@ print(f"convolution : {(c - b)/(f.width * f.height)}s per px")
 #m.resizeAmplitudeDiscreteFunction()
 #showImageFromDiscreteFunction(m)
 
-Ff=FourierTransform(f, 0)
-saveDiscreteFunction(Ff, "fourier.txt")
+f = DiscretefunctionFromImage(r'rubiks.png')
+
+#Ff=FourierTransform(f, -1)
+Ff=FrequencyDiscreteFunction(fft.fft2(f.kernel),0,0)
+
+#saveDiscreteFunction(Ff, "fourier.txt")
 Ff_module=Ff.getModule(True)
 Ff_module.resizeAmplitudeDiscreteFunction()
 showImageFromDiscreteFunction(Ff_module)
+saveImageFromDiscreteFunction(Ff_module, "frezFourier.png")
 
+"""
+w=1
+T=10
+r=DiscreteFunction([[127.5*cos(k*w)+127.5 for k in range(int(T*2*pi/w))] for n in range(int(T*2*pi/w))], 0, 0)
+#showImageFromDiscreteFunction(r)
+
+Fr=FourierTransform(r)
+Fr_module=Fr.getModule(False)
+#saveDiscreteFunction(Fr, "cosinus.txt")
+Fr_module.resizeAmplitudeDiscreteFunction()
+Fr_moduleR=revolveDiscreteFunction(Fr_module)
+showImageFromDiscreteFunction(Fr_moduleR)"""

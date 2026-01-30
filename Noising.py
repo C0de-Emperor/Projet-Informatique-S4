@@ -12,7 +12,7 @@ def saltAndPaperNoising(function: "DiscreteFunction", probability: float):
                 function[i, j] = 255 * random.choice([0, 1])
 
     
-def noising(function: "DiscreteFunction", minAdd: int, maxAdd: int):
+def randomNoising (function: "DiscreteFunction", minAdd: int, maxAdd: int):
     import random
 
     for j in range(function.height):

@@ -2,8 +2,8 @@ from math import e, pi, atan2, log
 import os
 
 class DiscreteFunction:
-    def __init__(self, kernel:list[list[complex]], x:int = 0, y:int = 0):
-        self.kernel: list[list[complex]] = kernel
+    def __init__(self, kernel:list[list[float]], x:int = 0, y:int = 0):
+        self.kernel: list[list[float]] = kernel
         self.width: int = len(kernel[0])
         self.height: int = len(kernel)
         self.x: int = x
@@ -116,7 +116,9 @@ class DiscreteFunction:
         for j in range(self.height):
             mat.append([])
             for i in range(self.width):
-                if logarithmic: mat[j].append(log(abs(self[i,j])))
+                if logarithmic: 
+                    if self[i,j] != 0+0j: mat[j].append(log(abs(self[i,j]), 10))
+                    else: mat[j].append(float("-inf"))
                 else: mat[j].append(abs(self[i,j]))
         
         return DiscreteFunction(mat, 0, 0)
@@ -142,7 +144,7 @@ class DiscreteFunction:
 
         for i in range(self.width):
             for j in range(self.height):
-                self[i,j]=(self[i,j]-minV+minValue)*255/maxV
+                self[i,j]=(self[i,j]-minV)*(maxValue-minValue)/(maxV-minV)+minValue
     
     def medianFilter(self, radius: int = 1):
         newKernel = [[0]*self.width for _ in range(self.height)]
@@ -191,12 +193,12 @@ class DiscretefunctionFromImage (DiscreteFunction):
         self.path: str = path
         self.coeffs: tuple = coeffs
 
-        kernel: list[list[complex]] = DiscretefunctionFromImage._GetGrayScaleKernel(path, coeffs)
+        kernel: list[list[float]] = DiscretefunctionFromImage._GetGrayScaleKernel(path, coeffs)
 
         super().__init__(kernel, x, y)
 
     @staticmethod
-    def _GetGrayScaleKernel(filepath:str, coeffs:tuple=(0.299, 0.587, 0.114), showImage:bool=False) -> list[list[complex]]:
+    def _GetGrayScaleKernel(filepath:str, coeffs:tuple=(0.299, 0.587, 0.114), showImage:bool=False) -> list[list[float]]:
         from PIL import Image
         # coeffs[0], coeffs[1], coeffs[3] sont les coefficients de la combinaison linÃ©aire respectivement de rouge, vert et bleu
 
@@ -254,32 +256,57 @@ class GaussianDiscreteFunction (DiscreteFunction):
         return kernel
 
 
+class FrequencyDiscreteFunction (DiscreteFunction):
+    def __init__(self, kernel:list[list[complex]], x = 0, y = 0):
+        super().__init__(self.revolve(kernel), x, y)
+    
+    def revolve(self, kernel:list[list[complex]]):
+        width=len(kernel[0])
+        height=len(kernel)
+
+        mat=[]
+        for j in range(height*2):
+            mat.append([])
+            for i in range(width*2):
+                if j<height:
+                    if i>=width:
+                        mat[j].append(kernel[-j][i-width])
+                    else:
+                        mat[j].append(kernel[-j][-i])
+                else:
+                    if i>=width:
+                        mat[j].append(kernel[j-height][i-width])
+                    else:
+                        mat[j].append(kernel[j-height][-i])
+        
+        return mat
+
+
 class DiscreteConvertionError(Exception):
     pass
 
 
 def FourierTransform(discreteFunction:DiscreteFunction, rayonMax:int=-1) -> DiscreteFunction:
     mat=[]
-    for j in range(discreteFunction.height):
+    for q in range(discreteFunction.height):
         mat.append([])
-        print(round(j/discreteFunction.height*100, 1), "%")
-        for i in range(discreteFunction.width):
+        print(round(q/discreteFunction.height*100, 1), "%")
+        for p in range(discreteFunction.width):
             value=0
             if rayonMax>=0:
-                for k in range(i-rayonMax, i+rayonMax+1):
-                    for n in range(j-rayonMax, j+rayonMax+1):
-                        theta=-2*pi*(i*(rayonMax+k)/(2*rayonMax+1)+j*(rayonMax+n)/(2*rayonMax+1))
-                        value+=discreteFunction[k,n]*e**(theta*1j)
+                for m in range(p-rayonMax, p+rayonMax+1):
+                    for n in range(q-rayonMax, q+rayonMax+1):
+                        theta=-2*pi*(p*(rayonMax+m)/(2*rayonMax+1)+q*(rayonMax+n)/(2*rayonMax+1))
+                        value+=discreteFunction[m,n]*e**(theta*1j)
             else:
-                for k in range(discreteFunction.width):
+                for m in range(discreteFunction.width):
                     for n in range(discreteFunction.height):
-                        theta=-2*pi*(i*k/discreteFunction.width+j*n/discreteFunction.height)
-                        value+=discreteFunction[k,n]*e**(theta*1j)
+                        theta=-2*pi*(p*m/discreteFunction.width+q*n/discreteFunction.height)
+                        value+=discreteFunction[m,n]*e**(theta*1j)
             
-            mat[j].append(value)
+            mat[q].append(value)
     
-    return DiscreteFunction(mat, 0, 0)
-
+    return FrequencyDiscreteFunction(mat, 0, 0)
 
 
 
