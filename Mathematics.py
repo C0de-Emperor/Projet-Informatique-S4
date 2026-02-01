@@ -1,5 +1,4 @@
 from math import e, pi, atan2, log
-import os
 
 class DiscreteFunction:
     def __init__(self, kernel:list[list[float]], x:int = 0, y:int = 0):
@@ -98,6 +97,88 @@ class DiscreteFunction:
                 )
         return g
     
+    def adaptativeGaussianConvolution(self, other: "GaussianDiscreteFunction", diff: float):
+        if not isinstance(other, GaussianDiscreteFunction):
+            raise TypeError
+
+        g = DiscreteFunction(
+            [[0]*self.width for _ in range(self.height)],
+            x=self.x,
+            y=self.y
+        )
+
+        centerX = other.width // 2
+        centerY = other.height // 2
+
+        for i in range(self.width):
+            for j in range(self.height):
+
+                weighted_sum = 0
+                norm = 0
+
+                for m in range(other.width):
+                    for n in range(other.height):
+
+                        dx = m - centerX
+                        dy = n - centerY
+
+                        neighbor = self[i + dx, j + dy]
+                        center_pixel = self[i, j]
+
+                        if abs(center_pixel - neighbor) < diff:
+                            weight = other[m, n]
+                            weighted_sum += neighbor * weight
+                            norm += weight
+
+                if norm != 0:
+                    g[i, j] = weighted_sum / norm
+                else:
+                    g[i, j] = self[i, j]
+
+        return g
+
+    def bilateralFilter(self, spatialKernel: "GaussianDiscreteFunction", sigma_r: float):
+        from math import exp
+
+        g = DiscreteFunction(
+            [[0]*self.width for _ in range(self.height)],
+            x=self.x,
+            y=self.y
+        )
+
+        centerX = spatialKernel.width // 2
+        centerY = spatialKernel.height // 2
+
+        for i in range(self.width):
+            for j in range(self.height):
+
+                weighted_sum = 0
+                norm = 0
+                center = self[i, j]
+
+                for m in range(spatialKernel.width):
+                    for n in range(spatialKernel.height):
+
+                        dx = m - centerX
+                        dy = n - centerY
+
+                        neighbor = self[i + dx, j + dy]
+
+                        intensity_diff = neighbor - center
+                        w_r = exp(-(intensity_diff**2) / (2 * sigma_r**2))
+
+                        weight = spatialKernel[m, n] * w_r
+
+                        weighted_sum += neighbor * weight
+                        norm += weight
+
+                if norm != 0:
+                    g[i, j] = weighted_sum / norm
+                else:
+                    g[i, j] = center
+
+        return g
+
     def normalize(self):
         norm = sum(sum(row) for row in self.kernel)
 
@@ -179,6 +260,7 @@ class DiscreteFunction:
     def apply(self, func, *args, **kwargs):
         func(self, *args, **kwargs)
         return self
+
 
 
 class DiscretefunctionFromImage (DiscreteFunction):
@@ -264,7 +346,7 @@ class FrequencyDiscreteFunction (DiscreteFunction):
         width=len(kernel[0])
         height=len(kernel)
 
-        mat=[]
+        mat : list[list] = []
         for j in range(height*2):
             mat.append([])
             for i in range(width*2):
@@ -307,7 +389,6 @@ def FourierTransform(discreteFunction:DiscreteFunction, rayonMax:int=-1) -> Disc
             mat[q].append(value)
     
     return FrequencyDiscreteFunction(mat, 0, 0)
-
 
 
 

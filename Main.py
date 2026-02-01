@@ -1,68 +1,10 @@
-from Mathematics import *
-from Methods import *
-from Noising import *
-import time
-from math import cos, pi
+import Tests
 from numpy import fft
 
-
-
-"""
-
-a = time.time()
-
-f = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
-randomNoising(f, -20, 20)
-
-f = (
-    DiscretefunctionFromImage(r'Garden_strawberry.jpg')
-    .apply(saltAndPaperNoising, 0.01)
-    .medianFilter(1)
-)
-
-# ou bien
-
-g = DiscretefunctionFromImage(r'Garden_strawberry.jpg')
-
-g.apply(noising, -10, 10)
-
-showImageFromDiscreteFunction(g)
-
-
+Tests.AdaptativeGaussianFilterTest(r'Pictures\Garden_strawberry.jpg')
 
 
 exit()
-
-h = GaussianDiscreteFunction(0.6)
-
-b = time.time()
-print(f"convertion : {b - a}s")
-print(f"convertion : {(b - a)/(f.width * f.height)}s per px")
-
-"""
-h = DiscreteFunction(
-    [
-        [0, 1, 0],
-        [1, 0, -1],
-        [0, -1, 0]
-    ],
-    x = 0,
-    y = 0
-)
-
-h.normalize()
-"""
-
-g = f.convolve(h)
-
-c = time.time()
-
-print(f"convolution : {c - b}s")
-print(f"convolution : {(c - b)/(f.width * f.height)}s per px")"""
-
-#showImageFromDiscreteFunction(g)
-#showImageFromDiscreteFunction(f)
-
 #saveDiscreteFunction(f, "jeanClaude.txt")
 #showImageFromDiscreteFunction(loadDiscreteFunction("jeanClaude.txt"))
 
