@@ -84,19 +84,29 @@ def AdaptativeGaussianFilterTest (path: str):
 
     g.show()
 
-def FourierTransformTest(path: str, rayonMax:int):
+def FourierTransformTest(path: str, rayonMax:int=-1):
     discreteImage=DiscreteFunctionFromImage(path)
 
-    FM_discreteImage=FrequencyDiscreteFunction(FourierTransform(discreteImage, rayonMax).kernel)
+    start=time.time()
+    FM_discreteImage=FourierTransform(discreteImage, rayonMax)
+    print("DFT :", time.time()-start)
+
     FM_discreteImage=FM_discreteImage.getModule()
     FM_discreteImage.resizeAmplitudeDiscreteFunction()
 
-    numpyFM=FrequencyDiscreteFunction(fft.fft2(discreteImage.kernel))
+    start=time.time()
+    numpyFFT=fft.fft2(discreteImage.kernel)
+    print("Numpy FFT :", time.time()-start)
+
+    numpyFM=FrequencyDiscreteFunction(numpyFFT)
     numpyFM=numpyFM.getModule()
     numpyFM.resizeAmplitudeDiscreteFunction()
 
     FM_discreteImage.show()
     numpyFM.show()
+
+    saveImageFromDiscreteFunction(FM_discreteImage, 'Pictures/DFT_image.png')
+    saveImageFromDiscreteFunction(numpyFM, "Pictures/Numpy_image.png")
 
 
 
