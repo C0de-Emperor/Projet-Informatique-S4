@@ -261,6 +261,11 @@ class DiscreteFunction:
         func(self, *args, **kwargs)
         return self
 
+    def show(self):
+        from Methods import getImageFromDiscreteFunction
+        image = getImageFromDiscreteFunction(self)
+
+        image.show()
 
 
 class DiscreteFunctionFromImage (DiscreteFunction):
@@ -369,7 +374,7 @@ class DiscreteConvertionError(Exception):
 
 
 def FourierTransform(discreteFunction:DiscreteFunction, rayonMax:int=-1) -> DiscreteFunction:
-    mat=[]
+    mat:list[list] = []
     for q in range(discreteFunction.height):
         mat.append([])
         print(round(q/discreteFunction.height*100, 1), "%")
@@ -390,29 +395,41 @@ def FourierTransform(discreteFunction:DiscreteFunction, rayonMax:int=-1) -> Disc
     
     return FrequencyDiscreteFunction(mat, 0, 0)
 
-
-
 """
-def getNiveauxGris(filepath:str, coeffs:tuple=(0.299, 0.587, 0.114), showImage:bool=False):
-    # coeffs[0], coeffs[1], coeffs[3] sont les coefficients de la combinaison linÃ©aire respectivement de rouge, vert et bleu
-    assert round(sum(list(coeffs)), 2) == 1
-    assert os.path.exists(filepath)
+from cmath import exp, pi
 
-    image = PIL.Image.open(filepath)
-    imageMat = []
+def FourierTransform2(discreteFunction: DiscreteFunction, rayonMax: int = -1) -> DiscreteFunction:
+    W = discreteFunction.width
+    H = discreteFunction.height
+    mat = [[0j for _ in range(W)] for _ in range(H)]
 
-    for j in range(image.height):
-        imageMat.append([])
-        for i in range(image.width):
-            pixelColors=image.getpixel((i,j))
-            imageMat[j].append(round(sum([coeffs[k]*pixelColors[k] for k in range(3)])))
+    # --- globale ---
+    if rayonMax < 0:
+        for q in range(H):
+            print(round(q / H * 100, 1), "%")
+            for p in range(W):
+                s = 0j
+                for m in range(W):
+                    for n in range(H):
+                        theta = -2j * pi * (p * m / W + q * n / H)
+                        s += discreteFunction[m, n] * exp(theta)
+                mat[q][p] = s
 
-    if showImage:
-        image2 = PIL.Image.new("RGB", image.size)
-        for j in range(image2.height):
-            for i in range(image2.width):
-                image2.putpixel((i,j), tuple([imageMat[j][i]]*3))
-        image2.show()
+    # --- local ---
+    else:
+        R = rayonMax
+        for q in range(H):
+            print(round(q / H * 100, 1), "%")
+            for p in range(W):
+                s = 0j
+                for m in range(-R, R + 1):
+                    for n in range(-R, R + 1):
+                        theta = -2j * pi * (
+                            (p * m) / W +
+                            (q * n) / H
+                        )
+                        s += discreteFunction[p + m, q + n] * exp(theta)
+                mat[q][p] = s
 
-    return imageMat
+    return FrequencyDiscreteFunction(mat, 0, 0)
 """

@@ -15,10 +15,7 @@ def getImageFromDiscreteFunction(discreteFunction:"DiscreteFunction") -> Image.I
     
     return image
 
-def showImageFromDiscreteFunction(discreteFunction:"DiscreteFunction"):
-    image=getImageFromDiscreteFunction(discreteFunction)
 
-    image.show()
 
 def saveImageFromDiscreteFunction(discreteFunction:"DiscreteFunction", filename:str):
     image=getImageFromDiscreteFunction(discreteFunction)

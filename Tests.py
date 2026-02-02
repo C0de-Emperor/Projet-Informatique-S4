@@ -15,7 +15,7 @@ def MedianFilterTest (path: str):
         DiscreteFunctionFromImage(path)
         .apply(saltAndPaperNoising, 0.07)
     )
-    showImageFromDiscreteFunction(f)
+    f.show()
 
     b = time.time()
     print(f"convertion : {b - a}s")
@@ -28,7 +28,7 @@ def MedianFilterTest (path: str):
     print(f"median filter : {c - b}s")
     print(f"median filter : {(c - b)/(f.width * f.height)}s per px")
 
-    showImageFromDiscreteFunction(f)
+    f.show()
 
 def GaussianFilterTest (path: str):
     if not os.path.exists(path):
@@ -40,7 +40,7 @@ def GaussianFilterTest (path: str):
         DiscreteFunctionFromImage(path)
         .apply(randomNoising, -30, 30)
     )
-    showImageFromDiscreteFunction(f)
+    f.show()
 
     h = GaussianDiscreteFunction(0.6)
 
@@ -55,7 +55,7 @@ def GaussianFilterTest (path: str):
     print(f"gaussian filter : {c - b}s")
     print(f"gaussian filter : {(c - b)/(f.width * f.height)}s per px")
 
-    showImageFromDiscreteFunction(g)
+    g.show()
 
 def AdaptativeGaussianFilterTest (path: str):
     if not os.path.exists(path):
@@ -67,7 +67,7 @@ def AdaptativeGaussianFilterTest (path: str):
         DiscreteFunctionFromImage(path)
         .apply(randomNoising, -30, 30)
     )
-    showImageFromDiscreteFunction(f)
+    f.show()
 
     h = GaussianDiscreteFunction(0.6)
 
@@ -82,7 +82,7 @@ def AdaptativeGaussianFilterTest (path: str):
     print(f"adaptative gaussian filter : {c - b}s")
     print(f"adaptative gaussian filter : {(c - b)/(f.width * f.height)}s per px")
 
-    showImageFromDiscreteFunction(g)
+    g.show()
 
 def FourierTransformTest(path: str, rayonMax:int):
     discreteImage=DiscreteFunctionFromImage(path)
@@ -95,8 +95,8 @@ def FourierTransformTest(path: str, rayonMax:int):
     numpyFM=numpyFM.getModule()
     numpyFM.resizeAmplitudeDiscreteFunction()
 
-    showImageFromDiscreteFunction(FM_discreteImage)
-    showImageFromDiscreteFunction(numpyFM)
+    FM_discreteImage.show()
+    numpyFM.show()
 
 
 
