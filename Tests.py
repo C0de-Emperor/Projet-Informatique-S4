@@ -1,6 +1,7 @@
 from Mathematics import *
 from Methods import *
 from Noising import *
+from numpy import fft
 import time
 import os
 
@@ -11,7 +12,7 @@ def MedianFilterTest (path: str):
     a = time.time()
 
     f = (
-        DiscretefunctionFromImage(path)
+        DiscreteFunctionFromImage(path)
         .apply(saltAndPaperNoising, 0.07)
     )
     showImageFromDiscreteFunction(f)
@@ -36,7 +37,7 @@ def GaussianFilterTest (path: str):
     a = time.time()
 
     f = (
-        DiscretefunctionFromImage(path)
+        DiscreteFunctionFromImage(path)
         .apply(randomNoising, -30, 30)
     )
     showImageFromDiscreteFunction(f)
@@ -63,7 +64,7 @@ def AdaptativeGaussianFilterTest (path: str):
     a = time.time()
 
     f = (
-        DiscretefunctionFromImage(path)
+        DiscreteFunctionFromImage(path)
         .apply(randomNoising, -30, 30)
     )
     showImageFromDiscreteFunction(f)
@@ -83,7 +84,19 @@ def AdaptativeGaussianFilterTest (path: str):
 
     showImageFromDiscreteFunction(g)
 
+def FourierTransformTest(path: str, rayonMax:int):
+    discreteImage=DiscreteFunctionFromImage(path)
 
+    FM_discreteImage=FrequencyDiscreteFunction(FourierTransform(discreteImage, rayonMax).kernel)
+    FM_discreteImage=FM_discreteImage.getModule()
+    FM_discreteImage.resizeAmplitudeDiscreteFunction()
+
+    numpyFM=FrequencyDiscreteFunction(fft.fft2(discreteImage.kernel))
+    numpyFM=numpyFM.getModule()
+    numpyFM.resizeAmplitudeDiscreteFunction()
+
+    showImageFromDiscreteFunction(FM_discreteImage)
+    showImageFromDiscreteFunction(numpyFM)
 
 
 

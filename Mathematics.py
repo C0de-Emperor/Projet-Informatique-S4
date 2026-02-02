@@ -263,7 +263,7 @@ class DiscreteFunction:
 
 
 
-class DiscretefunctionFromImage (DiscreteFunction):
+class DiscreteFunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
         import os
 
@@ -275,7 +275,7 @@ class DiscretefunctionFromImage (DiscreteFunction):
         self.path: str = path
         self.coeffs: tuple = coeffs
 
-        kernel: list[list[float]] = DiscretefunctionFromImage._GetGrayScaleKernel(path, coeffs)
+        kernel: list[list[float]] = DiscreteFunctionFromImage._GetGrayScaleKernel(path, coeffs)
 
         super().__init__(kernel, x, y)
 
