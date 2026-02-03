@@ -1,4 +1,4 @@
-from math import e, pi, atan2, log
+from math import e, pi, atan2, log, sqrt
 
 class DiscreteFunction:
     def __init__(self, kernel:list[list[float]], x:int = 0, y:int = 0):
@@ -257,9 +257,21 @@ class DiscreteFunction:
 
         return sqrt(variance)
 
+    def RadiusFilter(self, radius:float, x:float=0, y:float=0, centered:bool=False):
+        if centered:
+            x=self.width/2
+            y=self.height/2
+
+        for i in range(self.width):
+            for j in range(self.height):
+                distance=sqrt((i-x)**2+(j-y)**2)
+                if distance > radius:
+                    self[i,j]=0
+
     def apply(self, func, *args, **kwargs):
         func(self, *args, **kwargs)
         return self
+    
 
     def show(self):
         from Methods import getImageFromDiscreteFunction

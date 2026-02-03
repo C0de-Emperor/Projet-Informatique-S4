@@ -108,9 +108,12 @@ def FourierTransformTest(path: str, rayonMax:int=-1):
     saveImageFromDiscreteFunction(FM_discreteImage, 'Pictures/DFT_image.png')
     saveImageFromDiscreteFunction(numpyFM, "Pictures/Numpy_image.png")
 
+def RadiusCutTest(path:str, radius:float, x:int=0, y:int=0, centered:bool=False):
+    discreteImage=DiscreteFunctionFromImage(path)
 
+    discreteImage.RadiusFilter(radius, x, y, centered)
 
-
+    showImageFromDiscreteFunction(discreteImage)
 
 
 
