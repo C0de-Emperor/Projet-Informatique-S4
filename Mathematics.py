@@ -395,6 +395,30 @@ def FourierTransform(discreteFunction:DiscreteFunction, rayonMax:int=-1) -> Disc
     
     return FrequencyDiscreteFunction(mat, 0, 0)
 
+def InverseFourierTransform(function: DiscreteFunction, rayonMax: int = -1) -> DiscreteFunction:
+    mat: list[list] = []
+    N = function.width * function.height
+    for q in range(function.height):
+        mat.append([])
+        print(round(q / function.height * 100, 1), "%")
+        for p in range(function.width):
+            value = 0
+            if rayonMax >= 0:
+                for m in range(p - rayonMax, p + rayonMax + 1):
+                    for n in range(q - rayonMax, q + rayonMax + 1):
+                        theta = 2 * pi * (p * (rayonMax + m) / (2 * rayonMax + 1) + q * (rayonMax + n) / (2 * rayonMax + 1))
+                        value += function[m, n] * e ** (theta * 1j)
+            else:
+                for m in range(function.width):
+                    for n in range(function.height):
+                        theta = 2 * pi * (p * m / function.width + q * n / function.height)
+                        value += function[m, n] * e ** (theta * 1j)
+
+            mat[q].append(value/N)
+
+    return DiscreteFunction(mat, 0, 0)
+
+
 """
 from cmath import exp, pi
 
