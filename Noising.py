@@ -10,6 +10,7 @@ def saltAndPaperNoising(function: "DiscreteFunction", probability: float):
         for i in range(function.width):
             if random.random() <= probability:
                 function[i, j] = 255 * random.choice([0, 1])
+    
 
     
 def randomNoising (function: "DiscreteFunction", minAdd: int, maxAdd: int):
@@ -17,7 +18,7 @@ def randomNoising (function: "DiscreteFunction", minAdd: int, maxAdd: int):
 
     for j in range(function.height):
         for i in range(function.width):
-            value = function[i, j] + random.randint(minAdd, maxAdd)
+            value = function[i, j] + random.randint(int(minAdd), int(maxAdd))
 
             if value > 255:
                 value = 255

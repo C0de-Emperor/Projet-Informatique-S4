@@ -180,6 +180,9 @@ class DiscreteFunction:
         func(self, *args, **kwargs)
         return self
 
+    def copy(self):
+        return DiscreteFunction([[self[i,j] for i in range(self.width)] for j in range(self.height)], self.x, self.y)
+
 
 class DiscretefunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
