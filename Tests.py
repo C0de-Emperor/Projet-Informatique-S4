@@ -167,8 +167,8 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
     Inverse_discreteImage.show()
     numpyFM.show()
 
-    saveImageFromDiscreteFunction(Inverse_discreteImage, 'Pictures/Inverse3_image.png')
-    saveImageFromDiscreteFunction(numpyFM, "Pictures/Numpy_Inverse3_image.png")
+    saveImageFromDiscreteFunction(Inverse_discreteImage, 'Pictures/Inverse_image.png')
+    saveImageFromDiscreteFunction(numpyFM, "Pictures/Numpy_Inverse_image.png")
 
 
 
