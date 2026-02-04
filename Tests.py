@@ -118,6 +118,58 @@ def RadiusCutTest(path:str, radius:float, x:int=0, y:int=0, centered:bool=False)
 
 
 
+def InverseFourierTransformTest(path: str, rayonMax:int=-1):
+    discreteImage=DiscreteFunctionFromImage(path)
+
+    h, w = discreteImage.height, discreteImage.width
+
+    start = time.time()
+    FM_discreteImage = FourierTransform(discreteImage, rayonMax)
+    print("DFT :", time.time() - start)
+
+    matrice = [] # car sinon probleme de fréquence et informations en trop
+    for j in range(h):
+        matrice.append([])
+        for i in range(w):
+            matrice[j].append(FM_discreteImage.kernel[j][i])
+
+    clean_discreteImage = DiscreteFunction(matrice)
+
+    start = time.time()
+    Inverse_discreteImage = InverseFourierTransform(clean_discreteImage, rayonMax)
+    print("IDFT :", time.time() - start)
+
+    matrice_finale = [] # on retourne l'image
+    for j in range(h):
+        ligne = []
+        for i in range(w):
+            pixel = Inverse_discreteImage.kernel[h - 1 - j][w - 1 - i]
+            ligne.append(pixel)
+        matrice_finale.append(ligne)
+
+    Inverse_discreteImage = DiscreteFunction(matrice_finale)
+
+    Inverse_discreteImage=Inverse_discreteImage.getModule(False)
+    Inverse_discreteImage.resizeAmplitudeDiscreteFunction()
+
+    start = time.time()
+    numpyFFT = fft.fft2(discreteImage.kernel)
+    print("Numpy FFT :", time.time() - start)
+
+    start = time.time()
+    numpyInverse = fft.ifft2(numpyFFT)
+    print("Numpy Inverse FFT :", time.time() - start)
+
+    numpyFM=DiscreteFunction(numpyInverse.tolist())
+    numpyFM=numpyFM.getModule(False)
+    numpyFM.resizeAmplitudeDiscreteFunction()
+
+    Inverse_discreteImage.show()
+    numpyFM.show()
+
+    saveImageFromDiscreteFunction(Inverse_discreteImage, 'Pictures/Inverse3_image.png')
+    saveImageFromDiscreteFunction(numpyFM, "Pictures/Numpy_Inverse3_image.png")
+
 
 
 
