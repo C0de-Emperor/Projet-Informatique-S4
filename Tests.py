@@ -1,9 +1,61 @@
 from Mathematics import *
 from Methods import *
 from Noising import *
+from Analysis import *
 from numpy import fft
 import time
 import os
+
+def AnalysisSaltAndPaperTest (path: str, probability: float):
+    if not os.path.exists(path):
+        raise FileExistsError(f"{path} does not exist")
+    
+    f = DiscreteFunctionFromImage(path)
+    print("Local variance before : ", LocalVariance(f))
+    print("Gradient Energy before : ", GradientEnergy(f))
+    print("Quality Score before : ", QualityScore(f))
+    print("")
+
+    f.apply(saltAndPaperNoising, probability)
+
+    print("Local variance with noise : ", LocalVariance(f))
+    print("Gradient Energy with noise : ", GradientEnergy(f))
+    print("Quality Score with noise : ", QualityScore(f))
+    print("")
+
+    f.medianFilter(1)
+
+    print("Local variance after : ", LocalVariance(f))
+    print("Gradient Energy after : ", GradientEnergy(f))
+    print("Quality Score after : ", QualityScore(f))
+
+def AnalysisAdaptativeGaussianTest (path: str, minV: int, maxV: int, sigma:float, diff: float):
+    if not os.path.exists(path):
+        raise FileExistsError(f"{path} does not exist")
+    
+    f = DiscreteFunctionFromImage(path)
+    print("Local variance before : ", LocalVariance(f))
+    print("Gradient Energy before : ", GradientEnergy(f))
+    print("Quality Score before : ", QualityScore(f))
+    print("")
+
+    f.apply(randomNoising, minV, maxV)
+
+    f.show()
+
+    print("Local variance with noise : ", LocalVariance(f))
+    print("Gradient Energy with noise : ", GradientEnergy(f))
+    print("Quality Score with noise : ", QualityScore(f))
+    print("")
+
+    h = GaussianDiscreteFunction(sigma)
+    g = f.adaptativeGaussianConvolution(h, diff)
+
+    print("Local variance after : ", LocalVariance(g))
+    print("Gradient Energy after : ", GradientEnergy(g))
+    print("Quality Score after : ", QualityScore(g))
+
+    g.show()
 
 def MedianFilterTest (path: str):
     if not os.path.exists(path):
@@ -98,7 +150,7 @@ def FourierTransformTest(path: str, rayonMax:int=-1):
     numpyFFT=fft.fft2(discreteImage.kernel)
     print("Numpy FFT :", time.time()-start)
 
-    numpyFM=FrequencyDiscreteFunction(numpyFFT)
+    numpyFM=ComplexDiscreteFunction(numpyFFT)
     numpyFM=numpyFM.getModule()
     numpyFM.resizeAmplitudeDiscreteFunction()
 
@@ -113,10 +165,7 @@ def RadiusCutTest(path:str, radius:float, x:int=0, y:int=0, centered:bool=False)
 
     discreteImage.RadiusFilter(radius, x, y, centered)
 
-    showImageFromDiscreteFunction(discreteImage)
-
-
-
+    discreteImage.show()
 
 def InverseFourierTransformTest(path: str, rayonMax:int=-1):
     discreteImage=DiscreteFunctionFromImage(path)
