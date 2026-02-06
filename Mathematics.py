@@ -193,19 +193,6 @@ class DiscreteFunction:
 
         self.kernel = [[value / norm for value in row] for row in self.kernel]
     
-    def getModule(self, logarithmic:bool=True):
-        mat=[]
-
-        for j in range(self.height):
-            mat.append([])
-            for i in range(self.width):
-                if logarithmic: 
-                    if self[i,j] != 0+0j: mat[j].append(log(abs(self[i,j]), 10))
-                    else: mat[j].append(float("-inf"))
-                else: mat[j].append(abs(self[i,j]))
-        
-        return DiscreteFunction(mat, 0, 0)
-
     def getArgument(self):
         mat=[]
 
@@ -280,6 +267,26 @@ class DiscreteFunction:
 
         image.show()
 
+    def revolve(self, kernel:list[list[complex]]):
+        width=len(kernel[0])
+        height=len(kernel)
+
+        mat : list[list] = []
+        for j in range(height*2):
+            mat.append([])
+            for i in range(width*2):
+                if j<height:
+                    if i>=width:
+                        mat[j].append(kernel[-j][i-width])
+                    else:
+                        mat[j].append(kernel[-j][-i])
+                else:
+                    if i>=width:
+                        mat[j].append(kernel[j-height][i-width])
+                    else:
+                        mat[j].append(kernel[j-height][-i])
+        
+        return mat
 
 class DiscreteFunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
@@ -356,30 +363,22 @@ class GaussianDiscreteFunction (DiscreteFunction):
         return kernel
 
 
-class FrequencyDiscreteFunction (DiscreteFunction):
+class ComplexDiscreteFunction (DiscreteFunction):
     def __init__(self, kernel:list[list[complex]], x = 0, y = 0):
         super().__init__(self.revolve(kernel), x, y)
-    
-    def revolve(self, kernel:list[list[complex]]):
-        width=len(kernel[0])
-        height=len(kernel)
 
-        mat : list[list] = []
-        for j in range(height*2):
+    def getModule(self, logarithmic:bool=True):
+        mat=[]
+
+        for j in range(self.height):
             mat.append([])
-            for i in range(width*2):
-                if j<height:
-                    if i>=width:
-                        mat[j].append(kernel[-j][i-width])
-                    else:
-                        mat[j].append(kernel[-j][-i])
-                else:
-                    if i>=width:
-                        mat[j].append(kernel[j-height][i-width])
-                    else:
-                        mat[j].append(kernel[j-height][-i])
+            for i in range(self.width):
+                if logarithmic: 
+                    if self[i,j] != 0+0j: mat[j].append(log(abs(self[i,j]), 10))
+                    else: mat[j].append(float("-inf"))
+                else: mat[j].append(abs(self[i,j]))
         
-        return mat
+        return DiscreteFunction(mat, 0, 0)
 
 
 class DiscreteConvertionError(Exception):
@@ -406,7 +405,7 @@ def FourierTransform(discreteFunction:DiscreteFunction, rayonMax:int=-1) -> Disc
             
             mat[q].append(value)
     
-    return FrequencyDiscreteFunction(mat, 0, 0)
+    return ComplexDiscreteFunction(mat, 0, 0)
 
 def InverseFourierTransform(function: DiscreteFunction, rayonMax: int = -1) -> DiscreteFunction:
     mat: list[list] = []
@@ -430,8 +429,6 @@ def InverseFourierTransform(function: DiscreteFunction, rayonMax: int = -1) -> D
             mat[q].append(value/N)
 
     return DiscreteFunction(mat, 0, 0)
-
-
 
 def FFT(data:list) -> list:
     if len(data)==1: return data
@@ -480,43 +477,3 @@ def getEcartRel(test, ref):
     for k in range(len(ref)):
         ecartMoy+=abs((ref[k]-test[k])/ref[k])
     return ecartMoy/len(ref)
-
-
-"""
-from cmath import exp, pi
-
-def FourierTransform2(discreteFunction: DiscreteFunction, rayonMax: int = -1) -> DiscreteFunction:
-    W = discreteFunction.width
-    H = discreteFunction.height
-    mat = [[0j for _ in range(W)] for _ in range(H)]
-
-    # --- globale ---
-    if rayonMax < 0:
-        for q in range(H):
-            print(round(q / H * 100, 1), "%")
-            for p in range(W):
-                s = 0j
-                for m in range(W):
-                    for n in range(H):
-                        theta = -2j * pi * (p * m / W + q * n / H)
-                        s += discreteFunction[m, n] * exp(theta)
-                mat[q][p] = s
-
-    # --- local ---
-    else:
-        R = rayonMax
-        for q in range(H):
-            print(round(q / H * 100, 1), "%")
-            for p in range(W):
-                s = 0j
-                for m in range(-R, R + 1):
-                    for n in range(-R, R + 1):
-                        theta = -2j * pi * (
-                            (p * m) / W +
-                            (q * n) / H
-                        )
-                        s += discreteFunction[p + m, q + n] * exp(theta)
-                mat[q][p] = s
-
-    return FrequencyDiscreteFunction(mat, 0, 0)
-"""
