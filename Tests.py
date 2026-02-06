@@ -223,7 +223,7 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
 def FFT2DTest(path: str):
     im=DiscreteFunctionFromImage(path)
 
-    numpyF=FrequencyDiscreteFunction(fft.fft2(im.kernel))
+    numpyF=ComplexDiscreteFunction(fft.fft2(im.kernel))
     numpyFM=numpyF.getModule(True)
     numpyFM.resizeAmplitudeDiscreteFunction()
 

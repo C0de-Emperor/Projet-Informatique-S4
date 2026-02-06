@@ -470,7 +470,7 @@ def FFT2(discreteImage:DiscreteFunction):
         for n in range(len(currentListFFT)):
             finishedFFTKernel[n].append(currentListFFT[n])
     
-    return FrequencyDiscreteFunction(finishedFFTKernel, discreteImage.x, discreteImage.y)
+    return ComplexDiscreteFunction(finishedFFTKernel, discreteImage.x, discreteImage.y)
 
 def getEcartRel(test, ref):
     ecartMoy=0
