@@ -1,6 +1,5 @@
 from PIL import Image
 from typing import TYPE_CHECKING
-from Mathematics import DiscreteFunction
 import os
 
 if TYPE_CHECKING:

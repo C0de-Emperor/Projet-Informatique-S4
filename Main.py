@@ -9,4 +9,4 @@ from numpy import fft
 
 #Tests.RadiusCutTest("Pictures/baboon.png", 200, centered=True)
 
-Tests.InverseFourierTransformTest("Pictures/petites_fraises.png")
+#Tests.InverseFourierTransformTest("Pictures/petites_fraises.png")

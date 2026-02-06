@@ -1,4 +1,6 @@
 from math import e, pi, atan2, log, sqrt
+from Methods import *
+from numpy import fft
 
 class DiscreteFunction:
     def __init__(self, kernel:list[list[float]], x:int = 0, y:int = 0):
@@ -274,7 +276,6 @@ class DiscreteFunction:
     
 
     def show(self):
-        from Methods import getImageFromDiscreteFunction
         image = getImageFromDiscreteFunction(self)
 
         image.show()
@@ -429,6 +430,56 @@ def InverseFourierTransform(function: DiscreteFunction, rayonMax: int = -1) -> D
             mat[q].append(value/N)
 
     return DiscreteFunction(mat, 0, 0)
+
+
+
+def FFT(data:list) -> list:
+    if len(data)==1: return data
+    if log(len(data), 2)!=int(log(len(data), 2)): data=completeTo2(data)
+
+    fft_gauche=FFT([data[2*k] for k in range(len(data)//2)])
+    fft_droite=FFT([data[2*k+1] for k in range(len(data)//2)])
+    for k in range(len(fft_droite)):
+        fft_droite[k]*=e**(-2*pi*1j*k/len(data))
+
+    mat=[]
+    for k in range(len(data)//2):
+        mat.append(fft_gauche[k]+fft_droite[k])
+    for k in range(len(data)//2):
+        mat.append(fft_gauche[k]-fft_droite[k])
+    
+    return mat
+
+def completeTo2(liste:list) -> list:
+    #newListe=liste+[0]*(2**(int(log(len(liste), 2))+1)-len(liste))
+    newListe=liste+[liste[k%len(liste)] for k in range(2**(int(log(len(liste), 2))+1)-len(liste))]
+    return newListe
+
+def FFT2(discreteImage:DiscreteFunction):
+    horizontalFFTKernel=[]
+
+    for k in range(discreteImage.height):
+        currentListFFT=FFT(discreteImage.kernel[k])
+        horizontalFFTKernel.append(currentListFFT)
+    
+    if log(len(horizontalFFTKernel), 2)==int(log(len(horizontalFFTKernel), 2)):
+        finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
+    else:
+        finishedFFTKernel=[[] for k in range(2**(int(log(len(horizontalFFTKernel), 2))+1))]
+
+    for k in range(len(horizontalFFTKernel[0])):
+        currentColumn=[horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))]
+        currentListFFT=FFT(currentColumn)
+        for n in range(len(currentListFFT)):
+            finishedFFTKernel[n].append(currentListFFT[n])
+    
+    return FrequencyDiscreteFunction(finishedFFTKernel, discreteImage.x, discreteImage.y)
+
+def getEcartRel(test, ref):
+    ecartMoy=0
+    for k in range(len(ref)):
+        ecartMoy+=abs((ref[k]-test[k])/ref[k])
+    return ecartMoy/len(ref)
 
 
 """
