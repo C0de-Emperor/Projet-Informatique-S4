@@ -1,5 +1,6 @@
-from math import e, pi, atan2, log, sqrt
-from Methods import *
+from math import log, sqrt
+from ImageMethods import *
+from MathematicsMethods import *
 from numpy import fft
 
 class DiscreteFunction:
@@ -193,7 +194,7 @@ class DiscreteFunction:
 
         self.kernel = [[value / norm for value in row] for row in self.kernel]
 
-    def resizeAmplitudeDiscreteFunction(self, minValue:int=0, maxValue:int=255):
+    def resizeAmplitude(self, minValue:int=0, maxValue:int=255):
         minV=float("inf")
         maxV=float("-inf")
 
@@ -250,33 +251,29 @@ class DiscreteFunction:
     def apply(self, func, *args, **kwargs):
         func(self, *args, **kwargs)
         return self
-    
 
     def show(self):
         image = getImageFromDiscreteFunction(self)
-
         image.show()
 
     def getRevolve(self):
-        width=len(self.kernel[0])
-        height=len(self.kernel)
-
         mat : list[list] = []
-        for j in range(height*2):
+
+        for j in range(self.height*2):
             mat.append([])
-            for i in range(width*2):
-                if j<height:
-                    if i>=width:
-                        mat[j].append(self.kernel[-j][i-width])
+            for i in range(self.width*2):
+                if j<self.height:
+                    if i>=self.width:
+                        mat[j].append(self[i-self.width, -j])
                     else:
-                        mat[j].append(self.kernel[-j][-i])
+                        mat[j].append(self[-i, -j])
                 else:
-                    if i>=width:
-                        mat[j].append(self.kernel[j-height][i-width])
+                    if i>=self.width:
+                        mat[j].append(self[i-self.width, j-self.height])
                     else:
-                        mat[j].append(self.kernel[j-height][-i])
+                        mat[j].append(self[-i, j-self.height])
         
-        return DiscreteFunction(mat, self.x, self.y)
+        return DiscreteFunction(mat)
 
 class DiscreteFunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
@@ -290,31 +287,9 @@ class DiscreteFunctionFromImage (DiscreteFunction):
         self.path: str = path
         self.coeffs: tuple = coeffs
 
-        kernel: list[list[float]] = DiscreteFunctionFromImage._GetGrayScaleKernel(path, coeffs)
+        kernel: list[list[float]] = GetGrayScaleImage(self.path, self.coeffs)
 
         super().__init__(kernel, x, y)
-
-    @staticmethod
-    def _GetGrayScaleKernel(filepath:str, coeffs:tuple=(0.299, 0.587, 0.114), showImage:bool=False) -> list[list[float]]:
-        from PIL import Image
-        # coeffs[0], coeffs[1], coeffs[3] sont les coefficients de la combinaison linÃ©aire respectivement de rouge, vert et bleu
-
-        image = Image.open(filepath)
-        imageKernel = []
-        for j in range(image.height):
-            imageKernel.append([])
-            for i in range(image.width):
-                pixelColors = image.getpixel((i,j))
-                imageKernel[j].append(round(sum([coeffs[k]*pixelColors[k] for k in range(3)])))
-        
-        if showImage:
-            image2 = Image.new("RGB", image.size)
-            for j in range(image2.height):
-                for i in range(image2.width):
-                    image2.putpixel((i,j), tuple([imageKernel[j][i]]*3))
-            image2.show()
-
-        return imageKernel
 
 
 class GaussianDiscreteFunction (DiscreteFunction):
@@ -324,33 +299,8 @@ class GaussianDiscreteFunction (DiscreteFunction):
         self.sigma: float = sigma
         self.size: int = int(2*pi*sigma + 1)
 
-        kernel = GaussianDiscreteFunction._GetGaussianKernel(sigma, self.size)
+        kernel = GaussianKernel(sigma, self.size)
         super().__init__(kernel, x, y)
-
-    @staticmethod
-    def _GetGaussianKernel(sigma: float, size: int) -> list[list[float]]:
-        from math import pi, exp
-
-        center = size // 2
-        kernel = [[0.0] * size for _ in range(size)]
-        norm = 0.0
-
-        for j in range(size):
-            for i in range(size):
-                dx = i - center
-                dy = j - center
-                value = (1 / (2 * pi * sigma**2)) * exp(
-                    -(dx**2 + dy**2) / (2 * sigma**2)
-                )
-                kernel[j][i] = value
-                norm += value
-
-        # normalize
-        for j in range(size):
-            for i in range(size):
-                kernel[j][i] /= norm
-
-        return kernel
 
 
 class ComplexDiscreteFunction (DiscreteFunction):
@@ -376,7 +326,7 @@ class ComplexDiscreteFunction (DiscreteFunction):
         for j in range(self.height):
             mat.append([])
             for i in range(self.width):
-                mat[j].append(atan2(self[i,j].real, self[i,j].imag))
+                mat[j].append(arg(self[i,j]))
         
         return DiscreteFunction(mat, 0, 0)
 
@@ -387,143 +337,3 @@ class ComplexDiscreteFunction (DiscreteFunction):
 class DiscreteConvertionError(Exception):
     pass
 
-
-def FourierTransform(discreteFunction:DiscreteFunction, rayonMax:int=-1) -> DiscreteFunction:
-    mat:list[list] = []
-    for q in range(discreteFunction.height):
-        mat.append([])
-        print(round(q/discreteFunction.height*100, 1), "%")
-        for p in range(discreteFunction.width):
-            value=0
-            if rayonMax>=0:
-                for m in range(p-rayonMax, p+rayonMax+1):
-                    for n in range(q-rayonMax, q+rayonMax+1):
-                        theta=-2*pi*(p*(rayonMax+m)/(2*rayonMax+1)+q*(rayonMax+n)/(2*rayonMax+1))
-                        value+=discreteFunction[m,n]*e**(theta*1j)
-            else:
-                for m in range(discreteFunction.width):
-                    for n in range(discreteFunction.height):
-                        theta=-2*pi*(p*m/discreteFunction.width+q*n/discreteFunction.height)
-                        value+=discreteFunction[m,n]*e**(theta*1j)
-            
-            mat[q].append(value)
-    
-    return ComplexDiscreteFunction(mat, 0, 0)
-
-def InverseFourierTransform(function: DiscreteFunction, rayonMax: int = -1) -> DiscreteFunction:
-    mat: list[list] = []
-    N = function.width * function.height
-    for q in range(function.height):
-        mat.append([])
-        print(round(q / function.height * 100, 1), "%")
-        for p in range(function.width):
-            value = 0
-            if rayonMax >= 0:
-                for m in range(p - rayonMax, p + rayonMax + 1):
-                    for n in range(q - rayonMax, q + rayonMax + 1):
-                        theta = 2 * pi * (p * (rayonMax + m) / (2 * rayonMax + 1) + q * (rayonMax + n) / (2 * rayonMax + 1))
-                        value += function[m, n] * e ** (theta * 1j)
-            else:
-                for m in range(function.width):
-                    for n in range(function.height):
-                        theta = 2 * pi * (p * m / function.width + q * n / function.height)
-                        value += function[m, n] * e ** (theta * 1j)
-
-            mat[q].append(value/N)
-
-    return DiscreteFunction(mat, 0, 0)
-
-def FFT(data:list, completionMode:int) -> list:
-    if len(data)==1: return data
-    
-    data=completeTo2(data, completionMode)
-
-    fft_gauche=FFT([data[2*k] for k in range(len(data)//2)], completionMode)
-    fft_droite=FFT([data[2*k+1] for k in range(len(data)//2)], completionMode)
-    for k in range(len(fft_droite)):
-        fft_droite[k]*=e**(-2*pi*1j*k/len(data))
-    
-    mat=[]
-    for k in range(len(data)//2):
-        mat.append(fft_gauche[k]+fft_droite[k])
-    for k in range(len(data)//2):
-        mat.append(fft_gauche[k]-fft_droite[k])
-    
-    return mat
-
-def completeTo2(liste:list, mode:int) -> list:
-    if log(len(liste), 2)!=int(log(len(liste), 2)): 
-        match mode:
-            case 0: 
-                if liste is list:
-                    liste+=[[0]*len(liste[0])]*(2**(int(log(len(liste), 2))+1)-len(liste))
-                    print([[0]*len(liste[0])]*(2**(int(log(len(liste), 2))+1)-len(liste)))
-                else: liste+=[0]*(2**(int(log(len(liste), 2))+1)-len(liste))
-            case 1: liste+=[liste[k%len(liste)] for k in range(2**(int(log(len(liste), 2))+1)-len(liste))]
-    return liste
-
-def FFT2(kernel:list[list[complex]], completionMode:int):
-    horizontalFFTKernel=[]
-
-    for k in range(len(kernel)):
-        currentListFFT=FFT(kernel[k], completionMode)
-        horizontalFFTKernel.append(currentListFFT)
-    
-    horizontalFFTKernel=completeTo2(horizontalFFTKernel, completionMode)
-    finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
-
-    for k in range(len(horizontalFFTKernel[0])):
-        currentColumn=[horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))]
-        currentListFFT=FFT(currentColumn, completionMode)
-        for n in range(len(currentListFFT)):
-            finishedFFTKernel[n].append(currentListFFT[n])
-    
-    return finishedFFTKernel
-
-def IFFT(data:list, completionMode:int) -> list:
-    if len(data)==1: return data
-
-    data=completeTo2(data, completionMode)
-
-    mat=[]
-    for k in range(len(data)//2):
-        mat.append((data[k]+data[len(data)//2+k])/2)
-    for k in range(len(data)//2):
-        mat.append((data[k]-data[len(data)//2+k])*e**(2*pi*1j*k/len(data))/2)
-
-    ifft_gauche=IFFT(mat[:len(data)//2], completionMode)
-    ifft_droite=IFFT(mat[len(data)//2:], completionMode)
-
-    mat=[]
-    for k in range(len(data)//2):
-        mat.append(ifft_gauche[k])
-        mat.append(ifft_droite[k])
-
-    return mat
-    
-
-
-def IFFT2(kernel:list[list[complex]], completionMode:int):
-    horizontalFFTKernel=[]
-
-    for k in range(len(kernel)):
-        currentListFFT=IFFT(kernel[k], completionMode)
-        horizontalFFTKernel.append(currentListFFT)
-    
-    horizontalFFTKernel=completeTo2(horizontalFFTKernel, completionMode)
-    finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
-
-    for k in range(len(horizontalFFTKernel[0])):
-        currentColumn=[horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))]
-        currentListFFT=IFFT(currentColumn, completionMode)
-        for n in range(len(currentListFFT)):
-            finishedFFTKernel[n].append(currentListFFT[n])
-    
-    return finishedFFTKernel
-
-def getEcartRel(test, ref):
-    ecartMoy=0
-    for k in range(len(ref)):
-        if ref[k] is list: ecartMoy+=getEcartRel(ref[k], test[k])
-        else: ecartMoy+=abs((ref[k]-test[k])/ref[k])
-    return ecartMoy/len(ref)

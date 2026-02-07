@@ -1,8 +1,10 @@
 from Mathematics import *
-from Methods import *
+from ImageMethods import *
 from Noising import *
 from Analysis import *
 from numpy import fft
+from matplotlib import pyplot as plt
+import random
 import time
 import os
 
@@ -274,4 +276,43 @@ def FFTRadiusCutTest(path:str, noiseIntensity:float, radius:float):
     im2=im2.getModule()
     im2.resizeAmplitudeDiscreteFunction()
     im2.show()
+
+def FTsTimeTest(start, end, step):
+    pixels=[]
+    numpySeries=[]
+    homemadeSeries=[]
+    boostedHomemadeSeries=[]
+    dft=[]
+
+    for n in range(start, end, step):
+        pixels.append(n)
+        a=[[i*j for i in range(n)] for j in range(n)]
+
+        startTime=time.time()
+        fft.fft2(a)
+        numpySeries.append(time.time()-startTime)
+
+        startTime=time.time()
+        FFT2(a, 2)
+        homemadeSeries.append(time.time()-startTime)
+
+        #if __name__=="__main__":
+        startTime=time.time()
+        FFT2Boost(a, 2)
+        boostedHomemadeSeries.append(time.time()-startTime)
+
+        startTime=time.time()
+        FourierTransform(a)
+        dft.append(time.time()-startTime)
+
+        print(int((n-start+step)*100/(end-start)), "%")
     
+    plt.plot(pixels, numpySeries, "-b", label="fft numpy")
+    plt.plot(pixels, homemadeSeries, "-r", label="notre fft")
+    plt.plot(pixels, boostedHomemadeSeries, "-g", label="notre fft+multiprocessing")
+    plt.plot(pixels, dft, "-m", label="notre dft classique")
+    plt.legend(loc="upper left")
+    plt.xlabel("pixels on image's side")
+    plt.ylabel("time taken to compute the FFT")
+
+    plt.show()
