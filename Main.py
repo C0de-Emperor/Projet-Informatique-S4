@@ -15,4 +15,4 @@ from numpy import fft
 
 #Tests.FFTRadiusCutTest("Pictures/toto.png", 0.7, 1)
 
-if __name__=="__main__": Tests.FTsTimeTest(1,51, 1)
+if __name__=="__main__": Tests.FTsTimeTest(1, 10, 1)

@@ -27,7 +27,7 @@ def GaussianKernel(sigma: float, size: int) -> list[list[float]]:
 
         return kernel
 
-def FourierTransform(kernel:list[list[float]], rayonMax:int=-1) -> list[list[complex]]:
+def FourierTransform(kernel:list[list[float]]) -> list[list[complex]]:
     mat:list[list] = []
 
     for q in range(len(kernel)):
@@ -35,16 +35,10 @@ def FourierTransform(kernel:list[list[float]], rayonMax:int=-1) -> list[list[com
         print(round(q/len(kernel)*100, 1), "%")
         for p in range(len(kernel[0])):
             value=0
-            if rayonMax>=0:
-                for m in range(p-rayonMax, p+rayonMax+1):
-                    for n in range(q-rayonMax, q+rayonMax+1):
-                        theta=-2*pi*(p*(rayonMax+m)/(2*rayonMax+1)+q*(rayonMax+n)/(2*rayonMax+1))
-                        value+=kernel[n][m]*e**(theta*1j)
-            else:
-                for m in range(len(kernel[0])):
-                    for n in range(len(kernel)):
-                        theta=-2*pi*(p*m/len(kernel[0])+q*n/len(kernel))
-                        value+=kernel[n][m]*e**(theta*1j)
+            theta=e**(-2*pi*1j)
+            for m in range(len(kernel[0])):
+                for n in range(len(kernel)):
+                    value+=kernel[n][m]*theta**(p*m/len(kernel[0])+q*n/len(kernel))
             
             mat[q].append(value)
     
@@ -183,5 +177,7 @@ def getEcartRel(ref:list, test:list) -> float:
     ecartMoy=0
     for k in range(len(ref)):
         try: ecartMoy+=getEcartRel(ref[k], test[k])
-        except: ecartMoy+=abs((ref[k]-test[k])/ref[k])
+        except: 
+            if ref[k]!=0: ecartMoy+=abs((ref[k]-test[k])/ref[k])
+            else: ecartMoy+=abs(test[k])
     return float(ecartMoy)/len(ref)
