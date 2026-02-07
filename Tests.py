@@ -220,7 +220,7 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
     saveImageFromDiscreteFunction(numpyFM, "Pictures/Numpy_Inverse_image.png")
 
 
-def FFT2DTest(path: str):
+def FFT2DTest(path: str, completionMode:int):
     im=DiscreteFunctionFromImage(path)
 
     startTime=time.time()
@@ -235,7 +235,7 @@ def FFT2DTest(path: str):
 
     startTime=time.time()
 
-    myF=FFT2(im)
+    myF=ComplexDiscreteFunction(FFT2(im.kernel, completionMode))
     print(time.time()-startTime)
     myFM=myF.getModule(True)
     myFM.resizeAmplitudeDiscreteFunction()
@@ -243,23 +243,35 @@ def FFT2DTest(path: str):
 
     myFM.show()
 
-def IFFT2DTest(path:str):
+def IFFT2DTest(path:str, completionMode:int):
     im=DiscreteFunctionFromImage(path)
 
-    myF=FFT2(im)
+    myF=FFT2(im.kernel, completionMode)
     
-    newIm=IFFT2(myF)
+    newIm=ComplexDiscreteFunction(IFFT2(myF, completionMode))
+    newIm=newIm.getModule()
     newIm.resizeAmplitudeDiscreteFunction()
 
     newIm.show()
 
-def FFTRadiusCutTest(path:str):
+def FFTRadiusCutTest(path:str, noiseIntensity:float, radius:float):
     im=DiscreteFunctionFromImage(path)
 
-    im=randomNoising(im, 10, 20)
+    randomNoising(im, int(10**noiseIntensity), int(10**(noiseIntensity+1)))
     im.show()
 
-    imF=IFFT2(im)
-    imF.resizeAmplitudeDiscreteFunction()
+    imF=ComplexDiscreteFunction(FFT2(im.kernel, 1))
+    imFM=imF.getModule()
+    imFM.resizeAmplitudeDiscreteFunction()
+    imFM.show()
 
+    imF.RadiusFilter(radius)
+    imFM2=imF.getModule()
+    imFM2.resizeAmplitudeDiscreteFunction()
+    imFM2.show()
+
+    im2=ComplexDiscreteFunction(IFFT2(imF.kernel, 1))
+    im2=im2.getModule()
+    im2.resizeAmplitudeDiscreteFunction()
+    im2.show()
     

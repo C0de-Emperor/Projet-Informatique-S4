@@ -433,13 +433,13 @@ def InverseFourierTransform(function: DiscreteFunction, rayonMax: int = -1) -> D
 
     return DiscreteFunction(mat, 0, 0)
 
-def FFT(data:list) -> list:
+def FFT(data:list, completionMode:int) -> list:
     if len(data)==1: return data
     
-    data=completeTo2(data)
+    data=completeTo2(data, completionMode)
 
-    fft_gauche=FFT([data[2*k] for k in range(len(data)//2)])
-    fft_droite=FFT([data[2*k+1] for k in range(len(data)//2)])
+    fft_gauche=FFT([data[2*k] for k in range(len(data)//2)], completionMode)
+    fft_droite=FFT([data[2*k+1] for k in range(len(data)//2)], completionMode)
     for k in range(len(fft_droite)):
         fft_droite[k]*=e**(-2*pi*1j*k/len(data))
     
@@ -451,33 +451,39 @@ def FFT(data:list) -> list:
     
     return mat
 
-def completeTo2(liste:list) -> list:
-    #newListe=liste+[0]*(2**(int(log(len(liste), 2))+1)-len(liste))
-    if log(len(liste), 2)!=int(log(len(liste), 2)): liste+=[liste[k%len(liste)] for k in range(2**(int(log(len(liste), 2))+1)-len(liste))]
+def completeTo2(liste:list, mode:int) -> list:
+    if log(len(liste), 2)!=int(log(len(liste), 2)): 
+        match mode:
+            case 0: 
+                if liste is list:
+                    liste+=[[0]*len(liste[0])]*(2**(int(log(len(liste), 2))+1)-len(liste))
+                    print([[0]*len(liste[0])]*(2**(int(log(len(liste), 2))+1)-len(liste)))
+                else: liste+=[0]*(2**(int(log(len(liste), 2))+1)-len(liste))
+            case 1: liste+=[liste[k%len(liste)] for k in range(2**(int(log(len(liste), 2))+1)-len(liste))]
     return liste
 
-def FFT2(discreteImage:DiscreteFunction):
+def FFT2(kernel:list[list[complex]], completionMode:int):
     horizontalFFTKernel=[]
 
-    for k in range(discreteImage.height):
-        currentListFFT=FFT(discreteImage.kernel[k])
+    for k in range(len(kernel)):
+        currentListFFT=FFT(kernel[k], completionMode)
         horizontalFFTKernel.append(currentListFFT)
     
-    horizontalFFTKernel=completeTo2(horizontalFFTKernel)
+    horizontalFFTKernel=completeTo2(horizontalFFTKernel, completionMode)
     finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
 
     for k in range(len(horizontalFFTKernel[0])):
         currentColumn=[horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))]
-        currentListFFT=FFT(currentColumn)
+        currentListFFT=FFT(currentColumn, completionMode)
         for n in range(len(currentListFFT)):
             finishedFFTKernel[n].append(currentListFFT[n])
     
-    return ComplexDiscreteFunction(finishedFFTKernel, discreteImage.x, discreteImage.y)
+    return finishedFFTKernel
 
-def IFFT(data:list) -> list:
+def IFFT(data:list, completionMode:int) -> list:
     if len(data)==1: return data
 
-    data=completeTo2(data)
+    data=completeTo2(data, completionMode)
 
     mat=[]
     for k in range(len(data)//2):
@@ -485,8 +491,8 @@ def IFFT(data:list) -> list:
     for k in range(len(data)//2):
         mat.append((data[k]-data[len(data)//2+k])*e**(2*pi*1j*k/len(data))/2)
 
-    ifft_gauche=IFFT(mat[:len(data)//2])
-    ifft_droite=IFFT(mat[len(data)//2:])
+    ifft_gauche=IFFT(mat[:len(data)//2], completionMode)
+    ifft_droite=IFFT(mat[len(data)//2:], completionMode)
 
     mat=[]
     for k in range(len(data)//2):
@@ -497,25 +503,23 @@ def IFFT(data:list) -> list:
     
 
 
-def IFFT2(discreteImage:ComplexDiscreteFunction):
+def IFFT2(kernel:list[list[complex]], completionMode:int):
     horizontalFFTKernel=[]
 
-    for k in range(discreteImage.height):
-        currentListFFT=IFFT(discreteImage.kernel[k])
+    for k in range(len(kernel)):
+        currentListFFT=IFFT(kernel[k], completionMode)
         horizontalFFTKernel.append(currentListFFT)
     
-    horizontalFFTKernel=completeTo2(horizontalFFTKernel)
+    horizontalFFTKernel=completeTo2(horizontalFFTKernel, completionMode)
     finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
 
     for k in range(len(horizontalFFTKernel[0])):
         currentColumn=[horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))]
-        currentListFFT=IFFT(currentColumn)
+        currentListFFT=IFFT(currentColumn, completionMode)
         for n in range(len(currentListFFT)):
             finishedFFTKernel[n].append(currentListFFT[n])
     
-    newDiscreteImage=ComplexDiscreteFunction(finishedFFTKernel, discreteImage.x, discreteImage.y)
-    newDiscreteImage=newDiscreteImage.getModule(False)
-    return newDiscreteImage
+    return finishedFFTKernel
 
 def getEcartRel(test, ref):
     ecartMoy=0

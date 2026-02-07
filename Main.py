@@ -13,5 +13,5 @@ from numpy import fft
 
 #Tests.AnalysisAdaptativeGaussianTest("Pictures/Garden_strawberry.jpg", -50, 50, 0.9, 80)
 
-Tests.IFFT2DTest("Pictures/toto.png")
+Tests.FFTRadiusCutTest("Pictures/toto.png", 0.7, 1)
 
