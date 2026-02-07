@@ -192,16 +192,6 @@ class DiscreteFunction:
             raise ValueError("Cannot normalize a kernel with zero sum")
 
         self.kernel = [[value / norm for value in row] for row in self.kernel]
-    
-    def getArgument(self):
-        mat=[]
-
-        for j in range(self.height):
-            mat.append([])
-            for i in range(self.width):
-                mat[j].append(atan2(self[i,j].real, self[i,j].imag))
-        
-        return DiscreteFunction(mat, 0, 0)
 
     def resizeAmplitudeDiscreteFunction(self, minValue:int=0, maxValue:int=255):
         minV=float("inf")
@@ -267,9 +257,9 @@ class DiscreteFunction:
 
         image.show()
 
-    def revolve(self, kernel:list[list[complex]]):
-        width=len(kernel[0])
-        height=len(kernel)
+    def getRevolve(self):
+        width=len(self.kernel[0])
+        height=len(self.kernel)
 
         mat : list[list] = []
         for j in range(height*2):
@@ -277,16 +267,16 @@ class DiscreteFunction:
             for i in range(width*2):
                 if j<height:
                     if i>=width:
-                        mat[j].append(kernel[-j][i-width])
+                        mat[j].append(self.kernel[-j][i-width])
                     else:
-                        mat[j].append(kernel[-j][-i])
+                        mat[j].append(self.kernel[-j][-i])
                 else:
                     if i>=width:
-                        mat[j].append(kernel[j-height][i-width])
+                        mat[j].append(self.kernel[j-height][i-width])
                     else:
-                        mat[j].append(kernel[j-height][-i])
+                        mat[j].append(self.kernel[j-height][-i])
         
-        return mat
+        return DiscreteFunction(mat, self.x, self.y)
 
 class DiscreteFunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
@@ -365,7 +355,7 @@ class GaussianDiscreteFunction (DiscreteFunction):
 
 class ComplexDiscreteFunction (DiscreteFunction):
     def __init__(self, kernel:list[list[complex]], x = 0, y = 0):
-        super().__init__(self.revolve(kernel), x, y)
+        super().__init__(kernel, x, y)
 
     def getModule(self, logarithmic:bool=True):
         mat=[]
@@ -379,6 +369,19 @@ class ComplexDiscreteFunction (DiscreteFunction):
                 else: mat[j].append(abs(self[i,j]))
         
         return DiscreteFunction(mat, 0, 0)
+
+    def getArgument(self):
+        mat=[]
+
+        for j in range(self.height):
+            mat.append([])
+            for i in range(self.width):
+                mat[j].append(atan2(self[i,j].real, self[i,j].imag))
+        
+        return DiscreteFunction(mat, 0, 0)
+
+    def show(self):
+        im=self.revolve()
 
 
 class DiscreteConvertionError(Exception):
@@ -432,13 +435,14 @@ def InverseFourierTransform(function: DiscreteFunction, rayonMax: int = -1) -> D
 
 def FFT(data:list) -> list:
     if len(data)==1: return data
-    if log(len(data), 2)!=int(log(len(data), 2)): data=completeTo2(data)
+    
+    data=completeTo2(data)
 
     fft_gauche=FFT([data[2*k] for k in range(len(data)//2)])
     fft_droite=FFT([data[2*k+1] for k in range(len(data)//2)])
     for k in range(len(fft_droite)):
         fft_droite[k]*=e**(-2*pi*1j*k/len(data))
-
+    
     mat=[]
     for k in range(len(data)//2):
         mat.append(fft_gauche[k]+fft_droite[k])
@@ -449,8 +453,8 @@ def FFT(data:list) -> list:
 
 def completeTo2(liste:list) -> list:
     #newListe=liste+[0]*(2**(int(log(len(liste), 2))+1)-len(liste))
-    newListe=liste+[liste[k%len(liste)] for k in range(2**(int(log(len(liste), 2))+1)-len(liste))]
-    return newListe
+    if log(len(liste), 2)!=int(log(len(liste), 2)): liste+=[liste[k%len(liste)] for k in range(2**(int(log(len(liste), 2))+1)-len(liste))]
+    return liste
 
 def FFT2(discreteImage:DiscreteFunction):
     horizontalFFTKernel=[]
@@ -459,10 +463,8 @@ def FFT2(discreteImage:DiscreteFunction):
         currentListFFT=FFT(discreteImage.kernel[k])
         horizontalFFTKernel.append(currentListFFT)
     
-    if log(len(horizontalFFTKernel), 2)==int(log(len(horizontalFFTKernel), 2)):
-        finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
-    else:
-        finishedFFTKernel=[[] for k in range(2**(int(log(len(horizontalFFTKernel), 2))+1))]
+    horizontalFFTKernel=completeTo2(horizontalFFTKernel)
+    finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
 
     for k in range(len(horizontalFFTKernel[0])):
         currentColumn=[horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))]
@@ -472,8 +474,52 @@ def FFT2(discreteImage:DiscreteFunction):
     
     return ComplexDiscreteFunction(finishedFFTKernel, discreteImage.x, discreteImage.y)
 
+def IFFT(data:list) -> list:
+    if len(data)==1: return data
+
+    data=completeTo2(data)
+
+    mat=[]
+    for k in range(len(data)//2):
+        mat.append((data[k]+data[len(data)//2+k])/2)
+    for k in range(len(data)//2):
+        mat.append((data[k]-data[len(data)//2+k])*e**(2*pi*1j*k/len(data))/2)
+
+    ifft_gauche=IFFT(mat[:len(data)//2])
+    ifft_droite=IFFT(mat[len(data)//2:])
+
+    mat=[]
+    for k in range(len(data)//2):
+        mat.append(ifft_gauche[k])
+        mat.append(ifft_droite[k])
+
+    return mat
+    
+
+
+def IFFT2(discreteImage:ComplexDiscreteFunction):
+    horizontalFFTKernel=[]
+
+    for k in range(discreteImage.height):
+        currentListFFT=IFFT(discreteImage.kernel[k])
+        horizontalFFTKernel.append(currentListFFT)
+    
+    horizontalFFTKernel=completeTo2(horizontalFFTKernel)
+    finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
+
+    for k in range(len(horizontalFFTKernel[0])):
+        currentColumn=[horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))]
+        currentListFFT=IFFT(currentColumn)
+        for n in range(len(currentListFFT)):
+            finishedFFTKernel[n].append(currentListFFT[n])
+    
+    newDiscreteImage=ComplexDiscreteFunction(finishedFFTKernel, discreteImage.x, discreteImage.y)
+    newDiscreteImage=newDiscreteImage.getModule(False)
+    return newDiscreteImage
+
 def getEcartRel(test, ref):
     ecartMoy=0
     for k in range(len(ref)):
-        ecartMoy+=abs((ref[k]-test[k])/ref[k])
+        if ref[k] is list: ecartMoy+=getEcartRel(ref[k], test[k])
+        else: ecartMoy+=abs((ref[k]-test[k])/ref[k])
     return ecartMoy/len(ref)

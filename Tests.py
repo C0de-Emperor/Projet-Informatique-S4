@@ -223,14 +223,43 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
 def FFT2DTest(path: str):
     im=DiscreteFunctionFromImage(path)
 
+    startTime=time.time()
+
     numpyF=ComplexDiscreteFunction(fft.fft2(im.kernel))
+    print(time.time()-startTime)
     numpyFM=numpyF.getModule(True)
     numpyFM.resizeAmplitudeDiscreteFunction()
-
-    myF=FFT2(im)
-    myFM=myF.getModule(True)
-    myFM.resizeAmplitudeDiscreteFunction()
+    numpyFMR=numpyFM.getRevolve()
 
     numpyFM.show()
+
+    startTime=time.time()
+
+    myF=FFT2(im)
+    print(time.time()-startTime)
+    myFM=myF.getModule(True)
+    myFM.resizeAmplitudeDiscreteFunction()
+    myFMR=myFM.getRevolve()
+
     myFM.show()
 
+def IFFT2DTest(path:str):
+    im=DiscreteFunctionFromImage(path)
+
+    myF=FFT2(im)
+    
+    newIm=IFFT2(myF)
+    newIm.resizeAmplitudeDiscreteFunction()
+
+    newIm.show()
+
+def FFTRadiusCutTest(path:str):
+    im=DiscreteFunctionFromImage(path)
+
+    im=randomNoising(im, 10, 20)
+    im.show()
+
+    imF=IFFT2(im)
+    imF.resizeAmplitudeDiscreteFunction()
+
+    
