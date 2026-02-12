@@ -175,7 +175,7 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
     h, w = discreteImage.height, discreteImage.width
 
     start = time.time()
-    FM_discreteImage = FourierTransform(discreteImage, rayonMax)
+    FM_discreteImage = FourierTransform(discreteImage)
     print("DFT :", time.time() - start)
 
     matrice = [] # car sinon probleme de fréquence et informations en trop
@@ -259,22 +259,15 @@ def IFFT2DTest(path:str, completionMode:int):
 def FFTRadiusCutTest(path:str, noiseIntensity:float, radius:float):
     im=DiscreteFunctionFromImage(path)
 
-    randomNoising(im, int(10**noiseIntensity), int(10**(noiseIntensity+1)))
+    randomNoising(im, int(noiseIntensity*10), int(noiseIntensity*100))
     im.show()
 
-    imF=ComplexDiscreteFunction(FFT2(im.kernel, 1))
-    imFM=imF.getModule()
-    imFM.resizeAmplitudeDiscreteFunction()
-    imFM.show()
+    a=FFT2(im.kernel, 2)
+    imF=ComplexDiscreteFunction(a)
 
     imF.RadiusFilter(radius)
-    imFM2=imF.getModule()
-    imFM2.resizeAmplitudeDiscreteFunction()
-    imFM2.show()
 
-    im2=ComplexDiscreteFunction(IFFT2(imF.kernel, 1))
-    im2=im2.getModule()
-    im2.resizeAmplitudeDiscreteFunction()
+    im2=DiscreteFunction(IFFT2(imF.kernel, 2))
     im2.show()
 
 def FTsTimeTest(start, end, step):
@@ -316,3 +309,14 @@ def FTsTimeTest(start, end, step):
     plt.ylabel("time taken to compute the FFT")
 
     plt.show()
+
+def FFTAmplitudeCutTest(path:str, maxAmp:float, isLog:bool=False):
+    im=DiscreteFunctionFromImage(path)
+    saltAndPaperNoising(im, 0.05)
+    im.show()
+
+    imF=ComplexDiscreteFunction(FFT2(im.kernel))
+    imF.maxAmplitudeCut(maxAmp, isLog)
+
+    im2=DiscreteFunction(IFFT2(imF.kernel, 2))
+    im2.show()

@@ -97,14 +97,12 @@ def FFT(data:list, completionMode:int=0) -> list[complex]:
 
 def FFT2(kernel:list[list[complex]], completionMode:int=2) -> list[list[complex]]:
     horizontalFFTKernel=[]
-    finishedFFTKernel=[]
     
     for k in range(len(kernel)):
         horizontalFFTKernel.append(FFT(kernel[k], completionMode))
-        finishedFFTKernel.append([])
     
     horizontalFFTKernel=completeTo2(horizontalFFTKernel, completionMode)
-    finishedFFTKernel=completeTo2(finishedFFTKernel, 2)
+    finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
 
     for k in range(len(horizontalFFTKernel[0])):
         currentListFFT=FFT([horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))], completionMode)
@@ -133,9 +131,10 @@ def FFT2Boost(kernel:list[list[complex]], completionMode:int=2):
     return finishedFFTKernel
 
 def IFFT(data:list, completionMode:int, floatResult:bool=False, firstTime:bool=False) -> list[float]:
-    if len(data)==1: return data
-
-    data=completeTo2(data, completionMode)
+    if len(data)==1: 
+        if firstTime and floatResult: data[0]=abs(data[0])
+        return data
+    if firstTime: data=completeTo2(data, completionMode)
 
     mat=[]
     for k in range(len(data)//2):
@@ -157,27 +156,28 @@ def IFFT(data:list, completionMode:int, floatResult:bool=False, firstTime:bool=F
 
 def IFFT2(kernel:list[list[complex]], completionMode:int) -> list[list[float]]:
     horizontalFFTKernel=[]
+    finishedFFTKernel=[]
 
     for k in range(len(kernel)):
-        currentListFFT=IFFT(kernel[k], completionMode, False, True)
-        horizontalFFTKernel.append(currentListFFT)
-    
+        horizontalFFTKernel.append(IFFT(kernel[k], completionMode, False, True))
+        finishedFFTKernel.append([])
+
     horizontalFFTKernel=completeTo2(horizontalFFTKernel, completionMode)
-    finishedFFTKernel=[[] for k in range(len(horizontalFFTKernel))]
+    finishedFFTKernel=completeTo2(finishedFFTKernel, 2)
 
     for k in range(len(horizontalFFTKernel[0])):
-        currentColumn=[horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))]
-        currentListFFT=IFFT(currentColumn, completionMode, True, True)
-        for n in range(len(currentListFFT)):
-            finishedFFTKernel[n].append(currentListFFT[n])
+        currentListIFFT=IFFT([horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))], completionMode, True, True)
+        for n in range(len(currentListIFFT)):
+            finishedFFTKernel[n].append(currentListIFFT[n])
 
     return finishedFFTKernel
 
 def getEcartRel(ref:list, test:list) -> float:
     ecartMoy=0
     for k in range(len(ref)):
-        try: ecartMoy+=getEcartRel(ref[k], test[k])
-        except: 
+        try:
             if ref[k]!=0: ecartMoy+=abs((ref[k]-test[k])/ref[k])
             else: ecartMoy+=abs(test[k])
+        except: 
+            ecartMoy+=getEcartRel(ref[k], test[k])
     return float(ecartMoy)/len(ref)
