@@ -1,24 +1,35 @@
 from PIL import Image
 from typing import TYPE_CHECKING
-from Mathematics import DiscreteFunction
 import os
+from math import isnan
 
 if TYPE_CHECKING:
     from Mathematics import DiscreteFunction
+
+def GetGrayScaleImage(filepath:str, coeffs:tuple=(0.299, 0.587, 0.114)) -> list[list[float]]:
+        from PIL import Image
+        # coeffs[0], coeffs[1], coeffs[3] sont les coefficients de la combinaison lineaire respectivement de rouge, vert et bleu
+
+        image = Image.open(filepath)
+        imageKernel = []
+
+        for j in range(image.height):
+            imageKernel.append([])
+            for i in range(image.width):
+                pixelColors = image.getpixel((i,j))
+                imageKernel[j].append(round(sum([coeffs[k]*pixelColors[k] for k in range(3)])))
+
+        return imageKernel
 
 def getImageFromDiscreteFunction(discreteFunction:"DiscreteFunction") -> Image.Image:
     image=Image.new("RGB", (discreteFunction.width, discreteFunction.height))
 
     for i in range(0, discreteFunction.width):
         for j in range(0, discreteFunction.height):
-            image.putpixel((i,j), tuple([int(abs(discreteFunction[i,j]))]*3))
+            if discreteFunction[i,j]==None or isnan(discreteFunction[i,j]) or discreteFunction[i,j]==float("-inf") or discreteFunction[i,j]==float("inf"): image.putpixel((i,j), (255,0,0))
+            else: image.putpixel((i,j), tuple([int(abs(discreteFunction[i,j]))]*3))
     
     return image
-
-def showImageFromDiscreteFunction(discreteFunction:"DiscreteFunction"):
-    image=getImageFromDiscreteFunction(discreteFunction)
-
-    image.show()
 
 def saveImageFromDiscreteFunction(discreteFunction:"DiscreteFunction", filename:str):
     image=getImageFromDiscreteFunction(discreteFunction)
