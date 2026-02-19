@@ -314,6 +314,7 @@ class ComplexDiscreteFunction (DiscreteFunction):
             mat.append([])
             for i in range(self.width):
                 if logarithmic: 
+                    print(i,j)
                     if self[i,j] != 0+0j: mat[j].append(log(abs(self[i,j]), 10))
                     else: mat[j].append(float("-inf"))
                 else: mat[j].append(abs(self[i,j]))
@@ -336,4 +337,3 @@ class ComplexDiscreteFunction (DiscreteFunction):
 
 class DiscreteConvertionError(Exception):
     pass
-

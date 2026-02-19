@@ -27,7 +27,7 @@ def GaussianKernel(sigma: float, size: int) -> list[list[float]]:
 
         return kernel
 
-def FourierTransform(kernel:list[list[float]]) -> list[list[complex]]:
+def FourierTransform(kernel:list[list[float]]) -> list[list[complex]]: # ATTENTION ne marche pas avec des non puissances de 2
     mat:list[list] = []
 
     for q in range(len(kernel)):
@@ -35,14 +35,36 @@ def FourierTransform(kernel:list[list[float]]) -> list[list[complex]]:
         print(round(q/len(kernel)*100, 1), "%")
         for p in range(len(kernel[0])):
             value=0
-            theta=e**(-2*pi*1j)
             for m in range(len(kernel[0])):
                 for n in range(len(kernel)):
-                    value+=kernel[n][m]*theta**(p*m/len(kernel[0])+q*n/len(kernel))
+                    theta=-2j*pi*(p*m/len(kernel[0])+q*n/len(kernel))
+                    value+=kernel[n][m]*e**theta
             
-            mat[q].append(value)
+            mat[-1].append(value)
     
     return mat
+
+def DFT(kernel: list[list[float]]): # ATTENTION ne marche pas avec des non puissances de 2
+    mat=[]
+
+    for q in range(len(kernel)):
+        mat.append([])
+        for p in range(len(kernel[0])):
+            value=0
+            for m in range(len(kernel[0])):
+                value+=kernel[q][m]*e**(-2j*pi*p*m/len(kernel[0]))
+            mat[-1].append(value)
+    
+    mat2=[[] for k in range(len(mat))]
+    for p in range(len(mat[0])):
+        for q in range(len(mat)):
+            value=0
+            for n in range(len(mat)):
+                value+=mat[n][p]*e**(-2j*pi*q*n/len(kernel))
+            mat2[q].append(value)
+    
+    return mat2
+
 
 def InverseFourierTransform(kernel:list[list[complex]], rayonMax: int = -1) -> list[list[float]]:
     mat: list[list] = []

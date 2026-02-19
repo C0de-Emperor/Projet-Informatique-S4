@@ -259,10 +259,15 @@ def IFFT2DTest(path:str, completionMode:int):
 def FFTRadiusCutTest(path:str, noiseIntensity:float, radius:float):
     im=DiscreteFunctionFromImage(path)
 
-    randomNoising(im, int(10**noiseIntensity), int(10**(noiseIntensity+1)))
+    imF=ComplexDiscreteFunction(FFT2(im.kernel, 2))
+    imFM=imF.getModule()
+    imFM.resizeAmplitudeDiscreteFunction()
+    imFM.show()
+
+    saltAndPaperNoising(im, noiseIntensity)
     im.show()
 
-    imF=ComplexDiscreteFunction(FFT2(im.kernel, 1))
+    imF=ComplexDiscreteFunction(FFT2(im.kernel, 2))
     imFM=imF.getModule()
     imFM.resizeAmplitudeDiscreteFunction()
     imFM.show()
@@ -272,7 +277,7 @@ def FFTRadiusCutTest(path:str, noiseIntensity:float, radius:float):
     imFM2.resizeAmplitudeDiscreteFunction()
     imFM2.show()
 
-    im2=ComplexDiscreteFunction(IFFT2(imF.kernel, 1))
+    im2=ComplexDiscreteFunction(IFFT2(imF.kernel, 2))
     im2=im2.getModule()
     im2.resizeAmplitudeDiscreteFunction()
     im2.show()
@@ -282,11 +287,20 @@ def FTsTimeTest(start, end, step):
     numpySeries=[]
     homemadeSeries=[]
     boostedHomemadeSeries=[]
+    fourierTransform=[]
     dft=[]
 
     for n in range(start, end, step):
         pixels.append(n)
         a=[[i*j for i in range(n)] for j in range(n)]
+
+        startTime=time.time()
+        #FourierTransform(a)
+        fourierTransform.append(time.time()-startTime)
+
+        startTime=time.time()
+        #DFT(a)
+        dft.append(time.time()-startTime)
 
         startTime=time.time()
         fft.fft2(a)
@@ -301,16 +315,13 @@ def FTsTimeTest(start, end, step):
         #FFT2Boost(a, 2)
         boostedHomemadeSeries.append(time.time()-startTime)
 
-        startTime=time.time()
-        FourierTransform(a)
-        dft.append(time.time()-startTime)
-
-        print(int((n-start+step)*100/(end-start)), "%")
+        print("--------", int((n-start+step)*100/(end-start)), "%")
     
     plt.plot(pixels, numpySeries, "-b", label="fft numpy")
     plt.plot(pixels, homemadeSeries, "-r", label="notre fft")
     plt.plot(pixels, boostedHomemadeSeries, "-g", label="notre fft+multiprocessing")
-    plt.plot(pixels, dft, "-m", label="notre dft classique")
+    plt.plot(pixels, fourierTransform, "-m", label="transformée de Fourier classique")
+    plt.plot(pixels, dft, "-c", label="dft sur lignes puis colonnes")
     plt.legend(loc="upper left")
     plt.xlabel("pixels on image's side")
     plt.ylabel("time taken to compute the FFT")
