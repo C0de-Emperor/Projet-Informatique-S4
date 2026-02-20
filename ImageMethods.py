@@ -32,7 +32,7 @@ def getGrayScaleImage(image:Image.Image, coeffs:tuple=(0.299, 0.587, 0.114)) -> 
 
 def getImageFromDiscreteFunction(discreteFunction:"DiscreteFunction") -> Image.Image:
     image=Image.new("RGB", (discreteFunction.width, discreteFunction.height))
-
+    
     for i in range(0, discreteFunction.width):
         for j in range(0, discreteFunction.height):
             if discreteFunction[i,j]==None or isnan(discreteFunction[i,j]) or discreteFunction[i,j]==float("-inf") or discreteFunction[i,j]==float("inf"): image.putpixel((i,j), (255,0,0))

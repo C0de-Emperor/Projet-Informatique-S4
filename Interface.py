@@ -19,26 +19,19 @@ tabs=[]
 currentTab=None
 
 class Tab:
-    def __init__(self, name:str, parent:ctk.CTkFrame, image:Image.Image=None, discreteFunction:DiscreteFunction=None):
+    def __init__(self, name:str, parent:ctk.CTkFrame):
         global nextAvailableId
 
         self.id=nextAvailableId
         nextAvailableId+=1
 
-        self.image=image
-        self.discreteFunction=discreteFunction
-        if image != None:
-            self.image=pool.apply_async(getGrayScaleImage, (image, (0.299, 0.587, 0.114)), callback=self.changeImage)
-        if discreteFunction != None:
-            if isinstance(discreteFunction, DiscreteFunction): 
-                self.image=pool.apply_async(getImageFromDiscreteFunction, (image), callback=self.changeImage)
+        self.image=None
+        self.discreteFunction=None
 
         self.infos={}
         
         self.name=name
         self.parent=parent
-
-        self.childrenTabs=[]
 
         self.createTabElement()
 
@@ -48,15 +41,20 @@ class Tab:
         self.tabFrame=ctk.CTkFrame(self.parent)
         self.tabFrame.pack(fill="x", padx=(20*(self.parent!=tabsFrame),0))
 
-        self.tabButton=ctk.CTkButton(self.tabFrame, text=self.name, command=lambda: self.showSelf(True, True))
+        self.tabButton=ctk.CTkButton(self.tabFrame, text=self.name, command=lambda: self.showSelf(True, True, True))
         self.tabButton.pack(fill="x")
     
-    def showSelf(self, updateImage:bool=False, updateInfos:bool=False):
+    def showSelf(self, upImage:bool=False, upInfos:bool=False, clicked:bool=False):
         global currentTab
 
-        if updateImage: self.updateImage()
+        if currentTab != None: currentTab.tabButton.configure(fg_color=("#3B8ED0", "#1F6AA5"))
+        self.tabButton.configure(fg_color=("#1F6AA5", "#3B8ED0"))
 
-        if updateInfos:imageInfosPanel.updateInfos(self.infos)
+        if upImage: self.updateImage()
+        if upInfos:imageInfosPanel.updateInfos(self.infos)
+        if clicked:
+            imageProcessingPanel.destroyButtons()
+            imageProcessingPanel.setButtons()
 
         if self.discreteFunction == None or not isinstance(self.discreteFunction, DiscreteFunction): imageProcessingPanel.destroyButtons()
 
@@ -80,29 +78,6 @@ class Tab:
             imageContainer=ctk.CTkLabel(middleContainer, text="Image is loading...")
             imageContainer.pack(fill="both", expand=True)
     
-    def changeDiscreteFunction(self, element):
-        self.discreteFunction=DiscreteFunction(element)
-
-        self.getInfos()
-
-        imageProcessingPanel.setButtons()
-    
-    def changeImage(self, element):
-        self.image=element
-
-        if self.discreteFunction == None: self.discreteFunction=pool.apply_async(getKernelFromImage, (self.image, (0.299, 0.587, 0.114)), callback=self.changeDiscreteFunction)
-        
-        self.getInfos()
-
-        if currentTab==self:
-            self.showSelf(updateImage=True)
-    
-    def changeInfo(self, element):
-        self.infos[element[1]]=element[0]
-
-        if currentTab==self:
-            self.showSelf(updateInfos=True)
-    
     def getInfos(self):
         self.infos={}
 
@@ -116,12 +91,69 @@ class Tab:
             self.infos["Gradient Energy"]=pool.apply_async(getInfoForCallback, (self.discreteFunction, "Gradient Energy"), callback=self.changeInfo)
             self.infos["High Frequency Ratio"]=pool.apply_async(getInfoForCallback, (self.discreteFunction, "High Frequency Ratio"), callback=self.changeInfo)
     
-    def addChildTab(self, name:str, image:Image.Image, showChild:bool):
-        tab=Tab(name, image, self.tabFrame)
-        self.childrenTabs.append(tab)
+    def changeInfo(self, element):
+        self.infos[element[1]]=element[0]
 
-        if showChild: tab.showSelf()
+        if currentTab==self:
+            self.showSelf(upInfos=True)
+
+class TabFromImage(Tab):
+    def __init__(self, name:str, parent:ctk.CTkFrame, image:Image.Image):
+        super().__init__(name, parent)
+        
+        self.image=pool.apply_async(getGrayScaleImage, (image, (0.299, 0.587, 0.114)), callback=self.changeImage)
     
+    def changeImage(self, element):
+        self.image=element
+
+        self.discreteFunction=pool.apply_async(getKernelFromImage, (self.image, (0.299, 0.587, 0.114)), callback=self.changeDiscreteFunction)
+
+        self.getInfos()
+        if currentTab == self:
+            self.showSelf(upInfos=True, upImage=True)
+    
+    def changeDiscreteFunction(self, element):
+        self.discreteFunction=DiscreteFunction(element)
+
+        self.getInfos()
+        
+        imageProcessingPanel.setButtons()
+
+class TabFromDiscreteFunction(Tab):
+    def __init__(self, name:str, parent:ctk.CTkFrame, discreteFunction:DiscreteFunction):
+        super().__init__(name, parent)
+
+        self.discreteFunction=discreteFunction
+        self.image=pool.apply_async(getImageFromDiscreteFunction, (self.discreteFunction,), callback=self.changeImage)
+        self.getInfos()
+    
+    def changeImage(self, element):
+        self.image=element
+
+        self.getInfos()
+        if currentTab==self:
+            self.showSelf(upImage=True)
+
+class TabFromFunction(Tab):
+    def __init__(self, name:str, parent:ctk.CTkFrame, discreteFunction:DiscreteFunction, function, args):
+        super().__init__(name, parent)
+
+        pool.apply_async(TabFromFunction.applyFunction, (discreteFunction, function, args), callback=self.changeDiscreteFunction)
+    
+    def changeDiscreteFunction(self, element):
+        tab=TabFromDiscreteFunction(self.name, self.parent, element)
+        tab.showSelf(upImage=True, upInfos=True, clicked=True)
+
+        self.tabFrame.pack_forget()
+        del self
+    
+    def applyFunction(discreteFunction, function, args):
+        args["function"]=discreteFunction
+
+        function(**args)
+
+        return discreteFunction
+
 
 class ImageInfosPanel:
     def __init__(self):
@@ -188,18 +220,16 @@ class ImageProcessingPanel:
     
     def buttonPressed(self, key):
         if not isinstance(currentTab.discreteFunction, DiscreteFunction):
+            print("ARGGG")
             return
 
-        newDiscreteFunction=currentTab.discreteFunction.copy()
-
-        args=[newDiscreteFunction]+[float(k.get()) for k in self.buttons[key][2]]
-        
+        args=[None]+[float(k.get()) for k in self.buttons[key][2]]
         newArgs=dict(zip(inspect.signature(self.functions[key][0]).parameters, args))
-        self.functions[key][0](**newArgs)
 
         name=key+"; "+"; ".join([self.functions[key][k]+":"+str(args[k]) for k in range(1, len(self.functions[key]))])
-        image=getImageFromDiscreteFunction(newDiscreteFunction)
-        currentTab.addChildTab(name, image, True)
+
+        tab=TabFromFunction(name, currentTab.tabFrame, currentTab.discreteFunction, self.functions[key][0], newArgs)
+        tab.showSelf()
 
 
 def importNewImage():
@@ -214,14 +244,12 @@ def importNewImage():
         addErrorMessage(f"File format .{filename.split(".")[1]} not supported")
         return
 
-    tab=Tab(filename.split(".")[0], image, tabsFrame, True)
-    tab.showSelf()
+    tab=TabFromImage(filename.split(".")[0], tabsFrame, image)
+    tab.showSelf(upImage=True, upInfos=True)
 
 def getInfoForCallback(discreteFunction, infoName):
     a={"Local Variance":LocalVariance, "Gradient Energy":GradientEnergy, "High Frequency Ratio":HighFrequencyRatio}
     return a[infoName](discreteFunction), infoName
-
-
 
 def addErrorMessage(message:str):
     errorMessageTextboxValue=errorMessageLabel.cget("text")
@@ -248,7 +276,7 @@ def removeErrorMessage():
 
 window=ctk.CTk()
 window.title="Projet Maths-Info S4"
-window.geometry("800x600")
+window.geometry("1200x800")
 
 
 titleFont=ctk.CTkFont("font1", 13, "bold", underline=True)
@@ -262,7 +290,7 @@ errorMessageLabel=ctk.CTkLabel(window, text="")
 
 
 leftContainer=ctk.CTkFrame(panedWindow)
-panedWindow.add(leftContainer, minsize=200, stretch="never")
+panedWindow.add(leftContainer, minsize=300, stretch="never")
 
 tabsFrame=ctk.CTkFrame(leftContainer)
 tabsFrame.pack(fill="both", expand=True)
@@ -282,7 +310,7 @@ imageEditingActionsFrame.pack(side="bottom", fill="x")
 
 
 rightContainer=ctk.CTkFrame(panedWindow)
-panedWindow.add(rightContainer, minsize=100, stretch="never")
+panedWindow.add(rightContainer, minsize=300, stretch="never")
 
 imageInfosPanel=ImageInfosPanel()
 
