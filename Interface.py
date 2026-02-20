@@ -3,10 +3,13 @@ import tkinter as tk
 from PIL import Image, UnidentifiedImageError
 import inspect
 from functools import partial
+from multiprocessing import Pool
 
 from Mathematics import *
-from Methods import *
+from MathematicsMethods import *
+from ImageMethods import *
 from Noising import *
+from Analysis import *
 
 ERROR_SHOW_TIME=5000
 
@@ -16,21 +19,27 @@ tabs=[]
 currentTab=None
 
 class Tab:
-    def __init__(self, name:str, image:Image.Image, parent:ctk.CTkFrame):
+    def __init__(self, name:str, parent:ctk.CTkFrame, image:Image.Image=None, discreteFunction:DiscreteFunction=None):
         global nextAvailableId
 
         self.id=nextAvailableId
         nextAvailableId+=1
 
-        self.name=name
-
         self.image=image
+        self.discreteFunction=discreteFunction
+        if image != None:
+            self.image=pool.apply_async(getGrayScaleImage, (image, (0.299, 0.587, 0.114)), callback=self.changeImage)
+        if discreteFunction != None:
+            if isinstance(discreteFunction, DiscreteFunction): 
+                self.image=pool.apply_async(getImageFromDiscreteFunction, (image), callback=self.changeImage)
+
+        self.infos={}
+        
+        self.name=name
         self.parent=parent
 
         self.childrenTabs=[]
 
-        self.getDiscreteFunction()
-        self.getInfos()
         self.createTabElement()
 
         tabs.append(self)
@@ -39,50 +48,73 @@ class Tab:
         self.tabFrame=ctk.CTkFrame(self.parent)
         self.tabFrame.pack(fill="x", padx=(20*(self.parent!=tabsFrame),0))
 
-        self.tabButton=ctk.CTkButton(self.tabFrame, text=self.name, command=lambda: self.showSelf())
+        self.tabButton=ctk.CTkButton(self.tabFrame, text=self.name, command=lambda: self.showSelf(True, True))
         self.tabButton.pack(fill="x")
     
-    def showSelf(self):
+    def showSelf(self, updateImage:bool=False, updateInfos:bool=False):
         global currentTab
 
-        self.updateImage()
+        if updateImage: self.updateImage()
 
-        imageInfosPanel.updateInfos(self.infos)
+        if updateInfos:imageInfosPanel.updateInfos(self.infos)
+
+        if self.discreteFunction == None or not isinstance(self.discreteFunction, DiscreteFunction): imageProcessingPanel.destroyButtons()
 
         currentTab=self
     
     def updateImage(self):
         global imageContainer
 
-        scalingFactor=min(imageContainer.winfo_width()/self.image.width, imageContainer.winfo_height()/self.image.height)
+        if isinstance(self.image, Image.Image):
+            scalingFactor=min(imageContainer.winfo_width()/self.image.width, imageContainer.winfo_height()/self.image.height)
 
-        imageContainer.pack_forget()
+            imageContainer.pack_forget()
 
-        image=ctk.CTkImage(self.image, self.image, (self.image.width*scalingFactor, self.image.height*scalingFactor))
-        imageContainer=ctk.CTkLabel(middleContainer, image=image, text="")
+            image=ctk.CTkImage(self.image, self.image, (self.image.width*scalingFactor, self.image.height*scalingFactor))
+            imageContainer=ctk.CTkLabel(middleContainer, image=image, text="")
 
-        imageContainer.pack(fill="both", expand=True)
+            imageContainer.pack(fill="both", expand=True)
+        else:
+            imageContainer.pack_forget()
+
+            imageContainer=ctk.CTkLabel(middleContainer, text="Image is loading...")
+            imageContainer.pack(fill="both", expand=True)
     
-    def getDiscreteFunction(self):
-        coeffs=(0.299, 0.587, 0.114)
-        imageMat=[]
+    def changeDiscreteFunction(self, element):
+        self.discreteFunction=DiscreteFunction(element)
 
-        for j in range(self.image.height):
-            imageMat.append([])
-            for i in range(self.image.width):
-                pixelColors=self.image.getpixel((i,j))
-                grayLevel=round(sum([coeffs[k]*pixelColors[k] for k in range(3)]))
-                imageMat[j].append(grayLevel)
-                self.image.putpixel((i,j), (grayLevel, grayLevel, grayLevel))
+        self.getInfos()
+
+        imageProcessingPanel.setButtons()
+    
+    def changeImage(self, element):
+        self.image=element
+
+        if self.discreteFunction == None: self.discreteFunction=pool.apply_async(getKernelFromImage, (self.image, (0.299, 0.587, 0.114)), callback=self.changeDiscreteFunction)
         
-        self.discreteFunction=DiscreteFunction(imageMat)
+        self.getInfos()
+
+        if currentTab==self:
+            self.showSelf(updateImage=True)
+    
+    def changeInfo(self, element):
+        self.infos[element[1]]=element[0]
+
+        if currentTab==self:
+            self.showSelf(updateInfos=True)
     
     def getInfos(self):
         self.infos={}
 
-        self.infos["Width"]=self.discreteFunction.width
-        self.infos["Height"]=self.discreteFunction.height
-        self.infos["Number of pixels"]=self.discreteFunction.width*self.discreteFunction.height
+        if isinstance(self.image, Image.Image):
+            self.infos["Width"]=self.image.width
+            self.infos["Height"]=self.image.height
+            self.infos["Number of pixels"]=self.image.width*self.image.height
+        
+        if isinstance(self.discreteFunction, DiscreteFunction):
+            self.infos["Local Variance"]=pool.apply_async(getInfoForCallback, (self.discreteFunction, "Local Variance"), callback=self.changeInfo)
+            self.infos["Gradient Energy"]=pool.apply_async(getInfoForCallback, (self.discreteFunction, "Gradient Energy"), callback=self.changeInfo)
+            self.infos["High Frequency Ratio"]=pool.apply_async(getInfoForCallback, (self.discreteFunction, "High Frequency Ratio"), callback=self.changeInfo)
     
     def addChildTab(self, name:str, image:Image.Image, showChild:bool):
         tab=Tab(name, image, self.tabFrame)
@@ -90,7 +122,7 @@ class Tab:
 
         if showChild: tab.showSelf()
     
-    
+
 class ImageInfosPanel:
     def __init__(self):
         self.frame=ctk.CTkFrame(rightContainer)
@@ -98,22 +130,22 @@ class ImageInfosPanel:
         
         ctk.CTkLabel(self.frame, text="Image Characteristics :", font=titleFont).pack()
         
-        self.infos=("Width", "Height", "Number of pixels")
+        self.infos={"Width":0, "Height":0, "Number of pixels":0, "Local Variance":0, "Gradient Energy":0, "High Frequency Ratio":2}
 
         self.setInfos()
     
     def setInfos(self):
         self.infosLabels={}
 
-        for k in self.infos:
+        for k in self.infos.keys():
             label=ctk.CTkLabel(self.frame, text=k+": -")
             label.pack()
             self.infosLabels[k]=label
 
     def updateInfos(self, newInfos:dict):
         for key, value in self.infosLabels.items():
-            if key in newInfos.keys():
-                value.configure(text=key+": "+str(newInfos[key]))
+            if key in newInfos.keys() and (isinstance(newInfos[key], int) or isinstance(newInfos[key], float)):
+                value.configure(text=key+": "+str(round(newInfos[key], self.infos[key])))
             else:
                 value.configure(text=key+": -")
 
@@ -123,15 +155,17 @@ class ImageProcessingPanel:
         self.frame=ctk.CTkFrame(rightContainer)
         self.frame.pack(side="top", fill="x", pady=(5,0))
 
-        ctk.CTkLabel(self.frame, text="Image Processing Actions :", font=titleFont).pack(padx=10)
-
         self.functions={"Bruitage poivre et sel": (saltAndPaperNoising, "probability"),
                         "Bruitage aléatoire": (randomNoising, "minAdd", "maxAdd")}
-
-        self.setButtons()
+    
+    def destroyButtons(self):
+        for widget in self.frame.winfo_children():
+            widget.destroy()
     
     def setButtons(self):
         self.buttons={}
+
+        ctk.CTkLabel(self.frame, text="Image Processing Actions :", font=titleFont).pack(padx=10)
 
         for key, value in self.functions.items():
             elementsList=[]
@@ -153,6 +187,9 @@ class ImageProcessingPanel:
             self.buttons[key]=elementsList
     
     def buttonPressed(self, key):
+        if not isinstance(currentTab.discreteFunction, DiscreteFunction):
+            return
+
         newDiscreteFunction=currentTab.discreteFunction.copy()
 
         args=[newDiscreteFunction]+[float(k.get()) for k in self.buttons[key][2]]
@@ -160,7 +197,7 @@ class ImageProcessingPanel:
         newArgs=dict(zip(inspect.signature(self.functions[key][0]).parameters, args))
         self.functions[key][0](**newArgs)
 
-        name=key+"; "+"".join([self.functions[key][k]+":"+str(args[k])+"; " for k in range(1, len(self.functions[key]))])
+        name=key+"; "+"; ".join([self.functions[key][k]+":"+str(args[k]) for k in range(1, len(self.functions[key]))])
         image=getImageFromDiscreteFunction(newDiscreteFunction)
         currentTab.addChildTab(name, image, True)
 
@@ -177,8 +214,12 @@ def importNewImage():
         addErrorMessage(f"File format .{filename.split(".")[1]} not supported")
         return
 
-    tab=Tab(filename.split(".")[0], image, tabsFrame)
+    tab=Tab(filename.split(".")[0], image, tabsFrame, True)
     tab.showSelf()
+
+def getInfoForCallback(discreteFunction, infoName):
+    a={"Local Variance":LocalVariance, "Gradient Energy":GradientEnergy, "High Frequency Ratio":HighFrequencyRatio}
+    return a[infoName](discreteFunction), infoName
 
 
 
@@ -199,6 +240,7 @@ def removeErrorMessage():
 
     if len(errorMessageLines)<=1:
         errorMessageLabel.pack_forget()
+
 
 
 
@@ -246,4 +288,7 @@ imageInfosPanel=ImageInfosPanel()
 
 imageProcessingPanel=ImageProcessingPanel()
 
-window.mainloop()
+if __name__=="__main__":
+    pool=Pool()
+
+    window.mainloop()

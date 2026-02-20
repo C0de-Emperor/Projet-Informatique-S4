@@ -249,7 +249,7 @@ class DiscreteFunction:
         return self
 
     def copy(self):
-        return DiscreteFunction([[self[i,j] for i in range(self.width)] for j in range(self.height)], self.x, self.y)
+        return DiscreteFunction(self.kernel.copy(), self.x, self.y)
 
     def show(self):
         image = getImageFromDiscreteFunction(self)
@@ -298,7 +298,7 @@ class DiscreteFunctionFromImage (DiscreteFunction):
         self.path: str = path
         self.coeffs: tuple = coeffs
 
-        kernel: list[list[float]] = GetGrayScaleImage(self.path, self.coeffs)
+        kernel: list[list[float]] = getKernelFromImage(Image.open(self.path), self.coeffs)
 
         super().__init__(kernel, x, y)
 

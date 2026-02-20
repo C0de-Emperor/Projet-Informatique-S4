@@ -6,11 +6,9 @@ from math import isnan
 if TYPE_CHECKING:
     from Mathematics import DiscreteFunction
 
-def GetGrayScaleImage(filepath:str, coeffs:tuple=(0.299, 0.587, 0.114)) -> list[list[float]]:
-        from PIL import Image
+def getKernelFromImage(image:Image.Image, coeffs:tuple=(0.299, 0.587, 0.114)) -> list[list[float]]:
         # coeffs[0], coeffs[1], coeffs[3] sont les coefficients de la combinaison lineaire respectivement de rouge, vert et bleu
 
-        image = Image.open(filepath)
         imageKernel = []
 
         for j in range(image.height):
@@ -20,6 +18,17 @@ def GetGrayScaleImage(filepath:str, coeffs:tuple=(0.299, 0.587, 0.114)) -> list[
                 imageKernel[j].append(round(sum([coeffs[k]*pixelColors[k] for k in range(3)])))
 
         return imageKernel
+
+def getGrayScaleImage(image:Image.Image, coeffs:tuple=(0.299, 0.587, 0.114)) -> Image.Image:
+    image2=Image.new("RGB", image.size)
+
+    for j in range(image.height):
+        for i in range(image.width):
+            pixelColors=image.getpixel((i,j))
+            grayLevel=round(sum([coeffs[k]*pixelColors[k] for k in range(3)]))
+            image2.putpixel((i,j), (grayLevel, grayLevel, grayLevel))
+
+    return image2
 
 def getImageFromDiscreteFunction(discreteFunction:"DiscreteFunction") -> Image.Image:
     image=Image.new("RGB", (discreteFunction.width, discreteFunction.height))
