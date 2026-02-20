@@ -326,3 +326,32 @@ def FFTAmplitudeCutTest(path:str, maxAmp:float, isLog:bool=False):
 
     im2=DiscreteFunction(IFFT2(imF.kernel, 2))
     im2.show()
+
+def SectionnedMultiprocessedFFT2Test(imageSize, start, end, step):
+    sections=[]
+    sectionnedBoostedFFT2=[]
+
+    a=[[i*j for i in range(imageSize)] for j in range(imageSize)]
+
+    for n in range(start, end, step):
+        sections.append(n)
+
+        #if __name__=="__main__":
+        startTime=time.time()
+        sectionnedFFT2Boost(a, n)
+        sectionnedBoostedFFT2.append(time.time()-startTime)
+
+        print("--------", int((n-start+step)*100/(end-start)), "%")
+    
+    #if __name__=="__main__":
+    startTime=time.time()
+    FFT2Boost(a, 2)
+    boostedFFT2=[time.time()-startTime]*len(sections)
+
+    plt.plot(sections, boostedFFT2, "-g", label="controle (fft2 avec multiprocessing)")
+    plt.plot(sections, sectionnedBoostedFFT2, "-c", label="fft2 avec multiprocessing et segmentation")
+    plt.legend(loc="upper left")
+    plt.xlabel("number of sections for multiprocessing")
+    plt.ylabel("time taken to compute the FFT")
+
+    plt.show()

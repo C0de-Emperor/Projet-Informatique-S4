@@ -133,7 +133,7 @@ def FFT2(kernel:list[list[complex]], completionMode:int=2) -> list[list[complex]
     
     return finishedFFTKernel
 
-def FFT2Boost(kernel:list[list[complex]], completionMode:int=2):
+def FFT2Boost(kernel:list[list[float]], completionMode:int=2):
     from multiprocessing import Pool
 
     pool=Pool()
@@ -142,7 +142,7 @@ def FFT2Boost(kernel:list[list[complex]], completionMode:int=2):
     horizontalFFTKernel = pool.starmap(FFT, [(kernel[k], completionMode) for k in range(len(kernel))])
 
     horizontalFFTKernel=completeTo2(horizontalFFTKernel, completionMode)
-    finishedFFTKernel = [[]]*len(horizontalFFTKernel)
+    finishedFFTKernel = [[] for k in range(len(horizontalFFTKernel))]
 
     results=pool.starmap(FFT, [([horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))], completionMode) for k in range(len(horizontalFFTKernel[0]))])
 
@@ -151,6 +151,44 @@ def FFT2Boost(kernel:list[list[complex]], completionMode:int=2):
             finishedFFTKernel[n].append(results[k][n])
     
     return finishedFFTKernel
+
+def sectionnedFFT2Base(kernel):
+    return [FFT(k, 2) for k in kernel]
+
+def sectionnedFFT2Boost(kernel:list[list[float]], numberOfSections:int):
+    from multiprocessing import Pool
+
+    pool=Pool()
+    horizontalFFTKernel=[]
+
+    newKernel=[]
+    for k in range(0, len(kernel), len(kernel)//numberOfSections):
+        newKernel.append(kernel[k:k+len(kernel)//numberOfSections])
+    
+    for section in pool.map(sectionnedFFT2Base, newKernel):
+        horizontalFFTKernel+=section
+    
+    transposed=[[] for k in range(len(horizontalFFTKernel[0]))]
+
+    for k in range(len(horizontalFFTKernel)):
+        for n in range(len(horizontalFFTKernel[k])):
+            transposed[n].append(horizontalFFTKernel[k][n])
+    
+    newKernel=[]
+    for k in range(0, len(transposed), len(transposed)//numberOfSections):
+        newKernel.append(transposed[k:k+len(transposed)//numberOfSections])
+
+    results=[]
+    for section in pool.map(sectionnedFFT2Base, newKernel):
+        results+=section
+    
+    finishedFFTKernel=[[] for k in range(len(results[0]))]
+    for k in range(len(results)):
+        for n in range(len(results[k])):
+            finishedFFTKernel[n].append(results[k][n])
+    
+    return finishedFFTKernel
+
 
 def IFFT(data:list, completionMode:int, floatResult:bool=False, firstTime:bool=False) -> list[float]:
     if len(data)==1: 

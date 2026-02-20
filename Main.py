@@ -18,3 +18,5 @@ from numpy import fft
 #if __name__=="__main__": Tests.FTsTimeTest(1, 10, 1)
 
 #Tests.FFTAmplitudeCutTest("Pictures/toto.png", 6, True)
+
+#if __name__=="__main__": Tests.SectionnedMultiprocessedFFT2Test(1000, 1, 100, 10)
