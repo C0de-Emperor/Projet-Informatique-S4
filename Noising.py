@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from Mathematics import DiscreteFunction
 
-def saltAndPaperNoising(function: "DiscreteFunction", probability: float):
+def saltAndPaperNoising(discreteFunction: "DiscreteFunction", probability: float):
     import random
 
     for j in range(function.height):
@@ -13,7 +13,7 @@ def saltAndPaperNoising(function: "DiscreteFunction", probability: float):
     
 
     
-def randomNoising (function: "DiscreteFunction", minAdd: int, maxAdd: int):
+def randomNoising (discreteFunction: "DiscreteFunction", minAdd: int, maxAdd: int):
     import random
 
     for j in range(function.height):

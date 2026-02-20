@@ -141,6 +141,8 @@ class TabFromFunction(Tab):
         pool.apply_async(TabFromFunction.applyFunction, (discreteFunction, function, args), callback=self.changeDiscreteFunction)
     
     def changeDiscreteFunction(self, element):
+        print(element)
+
         tab=TabFromDiscreteFunction(self.name, self.parent, element)
         tab.showSelf(upImage=True, upInfos=True, clicked=True)
 
@@ -148,11 +150,12 @@ class TabFromFunction(Tab):
         del self
     
     def applyFunction(discreteFunction, function, args):
-        args["function"]=discreteFunction
+        args["discreteFunction"]=discreteFunction
 
-        function(**args)
+        a=function(**args)
 
-        return discreteFunction
+        if a==None: return discreteFunction
+        else: return a
 
 
 class ImageInfosPanel:
@@ -188,7 +191,8 @@ class ImageProcessingPanel:
         self.frame.pack(side="top", fill="x", pady=(5,0))
 
         self.functions={"Bruitage poivre et sel": (saltAndPaperNoising, "probability"),
-                        "Bruitage aléatoire": (randomNoising, "minAdd", "maxAdd")}
+                        "Bruitage aléatoire": (randomNoising, "minAdd", "maxAdd"),
+                        "FFT2": (DiscreteFunctionFFT2Module,)}
     
     def destroyButtons(self):
         for widget in self.frame.winfo_children():
@@ -229,7 +233,7 @@ class ImageProcessingPanel:
         name=key+"; "+"; ".join([self.functions[key][k]+":"+str(args[k]) for k in range(1, len(self.functions[key]))])
 
         tab=TabFromFunction(name, currentTab.tabFrame, currentTab.discreteFunction, self.functions[key][0], newArgs)
-        tab.showSelf()
+        tab.showSelf(upImage=True, upInfos=True)
 
 
 def importNewImage():

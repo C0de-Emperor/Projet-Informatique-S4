@@ -263,14 +263,14 @@ class DiscreteFunction:
             for i in range(self.width*2):
                 if j<self.height:
                     if i>=self.width:
-                        mat[j].append(self[i-self.width, -j])
+                        mat[j].append(self[i-self.width, self.height-j])
                     else:
-                        mat[j].append(self[-i, -j])
+                        mat[j].append(self[self.width-i, self.height-j])
                 else:
                     if i>=self.width:
                         mat[j].append(self[i-self.width, j-self.height])
                     else:
-                        mat[j].append(self[-i, j-self.height])
+                        mat[j].append(self[self.width-i, j-self.height])
         
         return DiscreteFunction(mat)
     
@@ -353,3 +353,13 @@ class ComplexDiscreteFunction (DiscreteFunction):
 class DiscreteConvertionError(Exception):
     pass
 
+def DiscreteFunctionFFT2Module(discreteFunction:DiscreteFunction) -> DiscreteFunction:
+    if discreteFunction.width*discreteFunction.height > 512**2: fft2Kernel=FFT2Boost(discreteFunction.kernel)
+    else: fft2Kernel=FFT2(discreteFunction.kernel)
+
+    FFT2DiscreteFunction=ComplexDiscreteFunction(fft2Kernel)
+    FFT2DiscreteFunctionModule=FFT2DiscreteFunction.getModule()
+    FFT2DiscreteFunctionModule.resizeAmplitude()
+    FFT2DiscreteFunctionModuleRevolved=FFT2DiscreteFunctionModule.getRevolve()
+
+    return FFT2DiscreteFunctionModuleRevolved
