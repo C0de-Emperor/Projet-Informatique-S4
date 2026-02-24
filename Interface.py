@@ -22,6 +22,8 @@ class Tab:
     def __init__(self, name:str, parent=None):
         global nextAvailableId
 
+        self.alive=True
+
         self.id=nextAvailableId
         nextAvailableId+=1
 
@@ -97,6 +99,8 @@ class Tab:
             self.infos["High Frequency Ratio"]=mainPool.apply_async(getInfoForCallback, (self.discreteFunction, "High Frequency Ratio"), callback=self.changeInfo)
     
     def changeInfo(self, element):
+        if not self.alive: return
+
         self.infos[element[1]]=element[0]
 
         if currentTab==self:
@@ -109,6 +113,8 @@ class TabFromImage(Tab):
         self.image=mainPool.apply_async(getGrayScaleImage, (image, (0.299, 0.587, 0.114)), callback=self.changeImage)
     
     def changeImage(self, element):
+        if not self.alive: return
+
         self.image=element
 
         self.discreteFunction=mainPool.apply_async(getKernelFromImage, (self.image, (0.299, 0.587, 0.114)), callback=self.changeDiscreteFunction)
@@ -118,6 +124,8 @@ class TabFromImage(Tab):
             self.showSelf(upInfos=True, upImage=True)
     
     def changeDiscreteFunction(self, element):
+        if not self.alive: return 
+
         self.discreteFunction=DiscreteFunction(element)
 
         self.getInfos()
@@ -133,6 +141,8 @@ class TabFromDiscreteFunction(Tab):
         self.getInfos()
     
     def changeImage(self, element):
+        if not self.alive: return 
+
         self.image=element
 
         self.getInfos()
@@ -146,6 +156,8 @@ class TabFromFunction(Tab):
         functionProcess=mainPool.apply_async(TabFromFunction.applyFunction, (discreteFunction, function, args), callback=self.changeDiscreteFunction)
     
     def changeDiscreteFunction(self, element):
+        if not self.alive: return 
+
         tab=TabFromDiscreteFunction(self.name, element, self.parentTab)
         tab.showSelf(upImage=True, upInfos=True, clicked=True)
 
@@ -286,25 +298,14 @@ class FileEditingPanel:
         global currentTab, imageContainer
 
         if currentTab==None: return
-
-        for k in vars(currentTab):
-            print(k, type(k))
-            if type(k)==pool.AsyncResult:
-                print("blub")
-                k.terminate()
         
-        for k in currentTab.infos.values():
-            print(k, type(k))
-            if type(k)==pool.AsyncResult:
-                print("blub")
-                k.terminate()
-        
+        currentTab.alive=False
         currentTab.tabFrame.pack_forget()
         tabs.remove(currentTab)
 
         if len(tabs)!=0: 
             currentTab=tabs[0]
-            currentTab.showSelf(upImage=True,  upInfos=True, clicked=True)
+            currentTab.showSelf(upImage=True, upInfos=True, clicked=True)
         else: 
             currentTab=None
 
