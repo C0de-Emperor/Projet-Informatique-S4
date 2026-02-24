@@ -120,7 +120,7 @@ def FFT2Boost(kernel:list[list[complex]], completionMode:int=2):
     horizontalFFTKernel = pool.starmap(FFT, [(kernel[k], completionMode) for k in range(len(kernel))])
 
     horizontalFFTKernel=completeTo2(horizontalFFTKernel, completionMode)
-    finishedFFTKernel = [[]]*len(horizontalFFTKernel)
+    finishedFFTKernel = [[] for k in range(len(horizontalFFTKernel))]
 
     results=pool.starmap(FFT, [([horizontalFFTKernel[n][k] for n in range(len(horizontalFFTKernel))], completionMode) for k in range(len(horizontalFFTKernel[0]))])
 

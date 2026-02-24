@@ -213,7 +213,7 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
 
     numpyFM=DiscreteFunction(numpyInverse.tolist())
     numpyFM=numpyFM.getModule(False)
-    numpyFM.resizeAmplitudeDiscreteFunction()
+    numpyFM.resizeAmplitude()
 
     Inverse_discreteImage.show()
     numpyFM.show()
@@ -227,20 +227,20 @@ def FFT2DTest(path: str, completionMode:int):
 
     startTime=time.time()
 
-    numpyF=ComplexDiscreteFunction(fft.fft2(im.kernel))
+    """numpyF=ComplexDiscreteFunction(fft.fft2(im.kernel))
     print(time.time()-startTime)
     numpyFM=numpyF.getModule(True)
-    numpyFM.resizeAmplitudeDiscreteFunction()
+    numpyFM.resizeAmplitude()
     numpyFMR=numpyFM.getRevolve()
 
-    numpyFM.show()
+    numpyFM.show()"""
 
     startTime=time.time()
 
     myF=ComplexDiscreteFunction(FFT2(im.kernel, completionMode))
     print(time.time()-startTime)
     myFM=myF.getModule(True)
-    myFM.resizeAmplitudeDiscreteFunction()
+    myFM.resizeAmplitude()
     myFMR=myFM.getRevolve()
 
     myFM.show()
@@ -252,7 +252,7 @@ def IFFT2DTest(path:str, completionMode:int):
     
     newIm=ComplexDiscreteFunction(IFFT2(myF, completionMode))
     newIm=newIm.getModule()
-    newIm.resizeAmplitudeDiscreteFunction()
+    newIm.resizeAmplitude()
 
     newIm.show()
 

@@ -209,6 +209,7 @@ class DiscreteFunction:
     
     def medianFilter(self, radius: int = 1):
         newKernel = [[0]*self.width for _ in range(self.height)]
+        radius=int(radius)
 
         for i in range(self.width):
             for j in range(self.height):
@@ -352,14 +353,3 @@ class ComplexDiscreteFunction (DiscreteFunction):
 
 class DiscreteConvertionError(Exception):
     pass
-
-def DiscreteFunctionFFT2Module(discreteFunction:DiscreteFunction) -> DiscreteFunction:
-    if discreteFunction.width*discreteFunction.height > 512**2: fft2Kernel=FFT2Boost(discreteFunction.kernel)
-    else: fft2Kernel=FFT2(discreteFunction.kernel)
-
-    FFT2DiscreteFunction=ComplexDiscreteFunction(fft2Kernel)
-    FFT2DiscreteFunctionModule=FFT2DiscreteFunction.getModule()
-    FFT2DiscreteFunctionModule.resizeAmplitude()
-    FFT2DiscreteFunctionModuleRevolved=FFT2DiscreteFunctionModule.getRevolve()
-
-    return FFT2DiscreteFunctionModuleRevolved
