@@ -19,7 +19,7 @@ tabs=[]
 
 
 class Tab:
-    def __init__(self, name:str, parent:ctk.CTkFrame):
+    def __init__(self, name:str, parent=None):
         global nextAvailableId
 
         self.id=nextAvailableId
@@ -31,15 +31,18 @@ class Tab:
         self.infos={}
         
         self.name=name
-        self.parent=parent
+        self.parentTab=parent
+        if parent==None: 
+            self.parentFrame=tabsFrame
+            tabs.append(self)
+        else: 
+            self.parentFrame=parent.tabFrame
 
         self.createTabElement()
-
-        tabs.append(self)
     
     def createTabElement(self):
-        self.tabFrame=ctk.CTkFrame(self.parent)
-        self.tabFrame.pack(fill="x", padx=(20*(self.parent!=tabsFrame),0))
+        self.tabFrame=ctk.CTkFrame(self.parentFrame)
+        self.tabFrame.pack(fill="x", padx=(20*(self.parentFrame!=tabsFrame),0))
 
         self.tabButton=ctk.CTkButton(self.tabFrame, text=self.name, command=lambda: self.showSelf(True, True, True))
         self.tabButton.pack(fill="x")
@@ -100,7 +103,7 @@ class Tab:
             self.showSelf(upInfos=True)
 
 class TabFromImage(Tab):
-    def __init__(self, name:str, parent:ctk.CTkFrame, image:Image.Image):
+    def __init__(self, name:str, image:Image.Image, parent:Tab=None):
         super().__init__(name, parent)
         
         self.image=mainPool.apply_async(getGrayScaleImage, (image, (0.299, 0.587, 0.114)), callback=self.changeImage)
@@ -119,10 +122,10 @@ class TabFromImage(Tab):
 
         self.getInfos()
         
-        self.parent.after(0, imageProcessingPanel.setButtons)
+        window.after(0, imageProcessingPanel.setButtons)
 
 class TabFromDiscreteFunction(Tab):
-    def __init__(self, name:str, parent:ctk.CTkFrame, discreteFunction:DiscreteFunction):
+    def __init__(self, name:str, discreteFunction:DiscreteFunction, parent:Tab=None):
         super().__init__(name[1:], parent)
 
         self.discreteFunction=discreteFunction
@@ -137,13 +140,13 @@ class TabFromDiscreteFunction(Tab):
             self.showSelf(upImage=True)
 
 class TabFromFunction(Tab):
-    def __init__(self, name:str, parent:ctk.CTkFrame, discreteFunction:DiscreteFunction, function, args):
+    def __init__(self, name:str, discreteFunction:DiscreteFunction, function, args, parent:Tab=None):
         super().__init__("*"+name, parent)
 
         functionProcess=mainPool.apply_async(TabFromFunction.applyFunction, (discreteFunction, function, args), callback=self.changeDiscreteFunction)
     
     def changeDiscreteFunction(self, element):
-        tab=TabFromDiscreteFunction(self.name, self.parent, element)
+        tab=TabFromDiscreteFunction(self.name, element, self.parentTab)
         tab.showSelf(upImage=True, upInfos=True, clicked=True)
 
         self.tabFrame.pack_forget()
@@ -233,7 +236,7 @@ class ImageProcessingPanel:
 
         name=key+"; "+"; ".join([self.functions[key][k]+":"+str(args[k-1]) for k in range(1, len(self.functions[key]))])
 
-        tab=TabFromFunction(name, currentTab.tabFrame, currentTab.discreteFunction, self.functions[key][0], args)
+        tab=TabFromFunction(name, currentTab.discreteFunction, self.functions[key][0], args, currentTab)
         tab.showSelf(upImage=True, upInfos=True)
 
 class FileEditingPanel:
@@ -276,7 +279,7 @@ class FileEditingPanel:
 
         currentTab.image.save(filepath+".png")
 
-    def copyImage(self):
+    def copyImage(self, event=None):
         copy(currentTab.image)
     
     def deleteImage(self):
@@ -330,7 +333,7 @@ def importImageFromClipboard(event):
     image=paste()
     if image==None: return
 
-    tab=TabFromImage("image", tabsFrame, image)
+    tab=TabFromImage("image", image)
     tab.showSelf(upImage=True, upInfos=True)
 
 def importNewImage():
@@ -345,7 +348,7 @@ def importNewImage():
         addErrorMessage(f"File format .{filename.split(".")[1]} not supported")
         return
 
-    tab=TabFromImage(filename.split(".")[:-1], tabsFrame, image)
+    tab=TabFromImage(filename.split(".")[:-1], image)
     tab.showSelf(upImage=True, upInfos=True)
 
 def getInfoForCallback(discreteFunction, infoName):
@@ -407,6 +410,7 @@ imageContainer=ctk.CTkLabel(middleContainer, text="Image visualisation window")
 imageContainer.pack(side="top", fill="both", expand=True)
 
 fileEditingPanel=FileEditingPanel()
+window.bind("<Control-c>", fileEditingPanel.copyImage)
 
 
 rightContainer=ctk.CTkFrame(panedWindow)
