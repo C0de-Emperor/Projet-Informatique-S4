@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING
 from math import log10, sqrt
 from Mathematics import DiscreteFunction
+import matplotlib.pyplot as plt
 
 if TYPE_CHECKING:
     from Mathematics import ComplexDiscreteFunction
 
 
-# Local
+# --- Local ---
 def MSE(x: "DiscreteFunction", y: "DiscreteFunction"):
     result = 0
     for i in range(x.width):
@@ -23,7 +24,9 @@ def PSNR(x: "DiscreteFunction", y : "DiscreteFunction"):
 
     return 10 * log10((255**2) / mse)
 
-# Global
+# --- Global ---
+
+# Quality
 def SSIM(x: DiscreteFunction, y: DiscreteFunction):
     """
     Iterpretation for SSIM
@@ -67,6 +70,8 @@ def SSIM(x: DiscreteFunction, y: DiscreteFunction):
 
     return numerator / denominator
 
+
+# Flou
 def LaplacianVariance (x: DiscreteFunction):
     """
     Interpretation
@@ -123,6 +128,7 @@ def SobelVariance (x: DiscreteFunction):
 
     return (Var_x, Var_y, Var_xy)
 
+# Contraste
 def RMS (x: DiscreteFunction):
     """
     Interpretation
@@ -134,8 +140,115 @@ def RMS (x: DiscreteFunction):
 
     return x.StandardDeviation()
 
+def HistogramSpread(x: DiscreteFunction):
+    """
+    Interpretation
 
+    Donne une première évaluation du contraste de l'image
 
+    bien si [0.27, 0.6]
+    """
+
+    import numpy as np
+
+    # Récupération pixels
+    pixels = np.array([
+        x[i, j]
+        for j in range(x.height)
+        for i in range(x.width)
+    ])
+
+    # Histogramme (256 niveaux)
+    hist, _ = np.histogram(pixels, bins=256, range=(0, 256))
+
+    # Histogramme cumulé
+    cdf = np.cumsum(hist)
+    total = cdf[-1]
+
+    # Normalisation en %
+    cdf_normalized = cdf / total
+
+    # Trouver I25 et I75
+    I25 = np.searchsorted(cdf_normalized, 0.25)
+    I75 = np.searchsorted(cdf_normalized, 0.75)
+
+    # Histogram Spread
+    HS = (I75 - I25) / 255
+
+    return HS
+
+def CumulativeHistogramCorrelation(x: DiscreteFunction):
+    """
+    Interpretation
+
+    Donne une bonne évaluation du contraste de l'image
+
+    - [0, 1]
+    - correct [0.7, 1]
+    - proche de 1, l'image est contrastée
+    """
+
+    hist = [0] * 256
+
+    for j in range(x.height):
+        for i in range(x.width):
+            value = int(x[i, j])
+            if 0 <= value <= 255:
+                hist[value] += 1
+
+    cdf = [0] * 256
+    cumulative = 0
+    total_pixels = x.width * x.height
+
+    for k in range(256):
+        cumulative += hist[k]
+        cdf[k] = cumulative / total_pixels  # normalisation [0,1]
+
+    # CDF idéal (rampe linéaire)
+    cdf_ideal = [k / 255 for k in range(256)]
+
+    mean_real = sum(cdf) / 256
+    mean_ideal = sum(cdf_ideal) / 256
+
+    # Corrélation de Pearson
+    numerator = 0
+    var_real = 0
+    var_ideal = 0
+
+    for k in range(256):
+        a = cdf[k] - mean_real
+        b = cdf_ideal[k] - mean_ideal
+
+        numerator += a * b
+        var_real += a * a
+        var_ideal += b * b
+
+    denominator = sqrt(var_real * var_ideal)
+
+    if denominator == 0:
+        return 0
+
+    return numerator / denominator
+
+def SaltAndPepperDetection(x: DiscreteFunction):
+    hist = x.getHistorigram()
+
+    plt.figure()
+    plt.plot(range(0, 256), hist)
+    plt.plot(range(0, 256), [x.Expectation()]*256)
+    plt.plot(range(0, 256), [x.Expectation() + x.StandardDeviation()]*256)
+    plt.plot(range(0, 256), [x.Expectation() - x.StandardDeviation()]*256)
+    plt.show()
+
+    total = x.height * x.width
+
+    p_pepper = hist[0] / total       # pixels noirs
+    p_salt = hist[255] / total       # pixels blancs
+    p_salt_and_pepper = p_pepper + p_salt   # probabilité globale
+
+    print(p_salt_and_pepper)
+
+############## Anciens #####################
 
 # --- Indicateurs de dégradation --- #
 

@@ -292,6 +292,15 @@ class DiscreteFunction:
                         if abs(self[i,j]) >= maxValue:
                             self[i,j]=0
 
+    def getHistorigram (self):
+        hist = [0] * 256
+
+        for j in range(self.height):
+            for i in range(self.width):
+                value = max(0, min(255, int(self[i, j])))
+                hist[value] += 1
+            
+        return hist
 
 
 class DiscreteFunctionFromImage (DiscreteFunction):

@@ -1,5 +1,5 @@
 import Tests
-import Analysis
+import Analysis, Noising
 from Mathematics import *
 
 #Tests.AdaptativeGaussianFilterTest(r'Pictures\Garden_strawberry.jpg')
@@ -22,6 +22,8 @@ from Mathematics import *
 
 #Tests.AnalysisRandomNoisingCurveVSGaussian("Pictures/Garden_strawberry.jpg", amplitude= 40, steps=60)
 
-f = DiscreteFunctionFromImage("Pictures/toto.png")
+f = DiscreteFunctionFromImage(r'Pictures\Garden_strawberry.jpg')
+Analysis.SaltAndPepperDetection(f)
+f.apply(Noising.saltAndPaperNoising, 0.2)
 
-print(Analysis.SobelVariance(f))
+Analysis.SaltAndPepperDetection(f)
