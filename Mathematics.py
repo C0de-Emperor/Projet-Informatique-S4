@@ -247,15 +247,11 @@ class DiscreteFunction:
         from math import sqrt
         return sqrt(self.Variance())
 
-    def RadiusFilter(self, radius:float, x:float=0, y:float=0, centered:bool=False):
-        if centered:
-            x=self.width/2
-            y=self.height/2
-
+    def RadiusFilter(self, radius:float):
         for i in range(self.width):
             for j in range(self.height):
-                distance=sqrt((i-x)**2+(j-y)**2)
-                if distance > radius:
+                distances=[radius > sqrt((i-x)**2+(j-y)**2) for (x,y) in [(0,0), (0, self.height), (self.width, 0), (self.width, self.height)]]
+                if sum(distances) == 0:
                     self[i,j]=0
 
     def apply(self, func, *args, **kwargs):
@@ -284,6 +280,18 @@ class DiscreteFunction:
                         mat[j].append(self[-i, j-self.height])
         
         return DiscreteFunction(mat)
+    
+    def maxAmplitudeCut(self, maxValue, isLog:bool=False):
+        for i in range(self.width):
+            for j in range(self.height):
+                if (i,j)!=(0,0):
+                    if isLog:
+                        if log(abs(self[i,j]), 10) >= maxValue:
+                            self[i,j]=0
+                    else:
+                        if abs(self[i,j]) >= maxValue:
+                            self[i,j]=0
+
 
 
 class DiscreteFunctionFromImage (DiscreteFunction):
@@ -325,6 +333,7 @@ class ComplexDiscreteFunction (DiscreteFunction):
             mat.append([])
             for i in range(self.width):
                 if logarithmic: 
+                    print(i,j)
                     if self[i,j] != 0+0j: mat[j].append(log(abs(self[i,j]), 10))
                     else: mat[j].append(float("-inf"))
                 else: mat[j].append(abs(self[i,j]))
@@ -342,9 +351,13 @@ class ComplexDiscreteFunction (DiscreteFunction):
         return DiscreteFunction(mat, 0, 0)
 
     def show(self):
-        im=self.revolve()
+        #mat=ComplexDiscreteFunction(self.getRevolve().kernel)
+        mat=self.getModule()
+        mat.resizeAmplitude()
+
+        im=getImageFromDiscreteFunction(mat)
+        im.show()
 
 
 class DiscreteConvertionError(Exception):
     pass
-

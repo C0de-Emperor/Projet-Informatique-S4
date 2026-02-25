@@ -14,7 +14,7 @@ from Mathematics import *
 
 #Tests.AnalysisAdaptativeGaussianTest("Pictures/Garden_strawberry.jpg", -50, 50, 0.9, 80)
 
-#Tests.FFTRadiusCutTest("Pictures/toto.png", 0.7, 1)
+#Tests.FFTRadiusCutTest("Pictures/toto.png", 0.3, 50)
 
 #if __name__=="__main__": Tests.FTsTimeTest(1, 10, 1)
 
