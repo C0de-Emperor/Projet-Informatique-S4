@@ -57,10 +57,10 @@ class Tab:
     def showSelf(self, upImage:bool=False, upInfos:bool=False, clicked:bool=False):
         global currentTab
 
-        currentTab=self
-
         if currentTab != None: currentTab.tabButton.configure(fg_color=("#3B8ED0", "#1F6AA5"))
-        self.tabButton.configure(fg_color=("#1F6AA5", "#3B8ED0"))
+        self.tabButton.configure(fg_color=("#1F6AA5", "#19486D"))
+        
+        currentTab=self
 
         if upImage: self.updateImage()
         if upInfos:imageInfosPanel.updateInfos(self.infos)
@@ -177,6 +177,8 @@ class TabFromFunction(Tab):
     def changeDiscreteFunction(self, element):
         if not self.alive: return 
 
+        window.after(0, self.tabFrame.pack_forget())
+
         if self.function==ComplexDiscreteFunctionIFFT2:
             trueSize=self.getTrueSize()
             kernel=element.kernel[:trueSize[1]]
@@ -189,10 +191,10 @@ class TabFromFunction(Tab):
         else:
             tab=TabFromDiscreteFunction(self.name, element, self.parentTab, self.parentTab.frequencyDomain)
 
-        tab.showSelf(upImage=True, upInfos=True, clicked=True)
+        if currentTab==self:
+            tab.showSelf(upImage=True, upInfos=True, clicked=True)
 
-        self.tabFrame.pack_forget()
-        del self
+        self.parentTab.childrenTabs.remove(self)
     
     def applyFunction(discreteFunction, function, args):
 
@@ -342,21 +344,30 @@ class FileEditingPanel:
         
         currentTab.alive=False
         currentTab.tabFrame.pack_forget()
-        tabs.remove(currentTab)
+        
+        if currentTab.parentTab == None:
+            tabs.remove(currentTab)
+            if len(tabs)!=0: 
+                currentTab=tabs[0]
+                currentTab.showSelf(upImage=True, upInfos=True, clicked=True)
+            else: 
+                currentTab=None
 
-        if len(tabs)!=0: 
-            currentTab=tabs[0]
-            currentTab.showSelf(upImage=True, upInfos=True, clicked=True)
-        else: 
-            currentTab=None
+                imageContainer.pack_forget()
+                imageContainer=ctk.CTkLabel(middleContainer, text="Image visualisation window")
+                imageContainer.pack(side="top", fill="both", expand=True)
 
-            imageContainer.pack_forget()
-            imageContainer=ctk.CTkLabel(middleContainer, text="Image visualisation window")
-            imageContainer.pack(side="top", fill="both", expand=True)
-
-            imageInfosPanel.updateInfos({})
-            imageProcessingPanel.destroyButtons()
-            self.updateName("")
+                imageInfosPanel.updateInfos({})
+                imageProcessingPanel.destroyButtons()
+                self.updateName("")
+        else:
+            currentTab.parentTab.childrenTabs.remove(currentTab)
+            if len(currentTab.parentTab.childrenTabs)!=0:
+                currentTab=currentTab.parentTab.childrenTabs[0]
+                currentTab.showSelf(upImage=True, upInfos=True, clicked=True)
+            else:
+                currentTab=currentTab.parentTab
+                currentTab.showSelf(upImage=True, upInfos=True, clicked=True)
 
 
 def DiscreteFunctionBilateralFilter(discreteFunction:DiscreteFunction, kernelSize:float, sigma_r:float):
@@ -375,8 +386,8 @@ def ComplexDiscreteFunctionIFFT2(discreteFunction:ComplexDiscreteFunction):
     IFFT2DiscreteFunction=DiscreteFunction(ifft2Kernel)
     return IFFT2DiscreteFunction
 
-def DiscreteFunctionFFT2(discreteFunction:DiscreteFunction) -> DiscreteFunction:
-    #if discreteFunction.width*discreteFunction.height > 512**2: fft2Kernel=FFT2Boost(discreteFunction.kernel)
+def DiscreteFunctionFFT2(discreteFunction:DiscreteFunction, ) -> DiscreteFunction:
+    #if discreteFunction.width*discreteFunction.height > 512**2: fft2Kernel=FFT2Boost(discreteFunction.kernel, pool=mainPool)
     #else: fft2Kernel=FFT2(discreteFunction.kernel)
     fft2Kernel=FFT2(discreteFunction.kernel)
 
@@ -392,7 +403,7 @@ def importImageFromClipboard(event):
     tab.showSelf(upImage=True, upInfos=True)
 
 def importNewImage():
-    filepath=tk.filedialog.askopenfilename(title="Select File", filetypes=(("png files","*.png"),("jpeg files","*.jpg"),("all files","*.*")))
+    filepath=tk.filedialog.askopenfilename(title="Select File", filetypes=(("all files","*.*"),("png files","*.png"),("jpeg files","*.jpg")))
     if filepath=="": return
     filename=os.path.basename(filepath)
 

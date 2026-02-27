@@ -20,9 +20,4 @@ def randomNoising (discreteFunction: "DiscreteFunction", minAdd: int, maxAdd: in
         for i in range(discreteFunction.width):
             value = discreteFunction[i, j] + random.randint(int(minAdd), int(maxAdd))
 
-            if value > 255:
-                value = 255
-            if value < 0:
-                value = 0
-
             discreteFunction[i, j] = value

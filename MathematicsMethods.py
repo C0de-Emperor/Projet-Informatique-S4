@@ -1,4 +1,5 @@
 from math import atan2, pi, e, log
+from multiprocessing import Pool
 
 def arg(z:complex):
     return atan2(z.real, z.imag)
@@ -111,10 +112,8 @@ def FFT2(kernel:list[list[complex]], completionMode:int=2) -> list[list[complex]
     
     return finishedFFTKernel
 
-def FFT2Boost(kernel:list[list[complex]], completionMode:int=2):
-    from multiprocessing import Pool
-
-    pool=Pool()
+def FFT2Boost(kernel:list[list[complex]], completionMode:int=2, pool=None):
+    if not pool: pool=Pool()
     horizontalFFTKernel=[]
 
     horizontalFFTKernel = pool.starmap(FFT, [(kernel[k], completionMode) for k in range(len(kernel))])

@@ -15,6 +15,6 @@ from numpy import fft
 
 #Tests.FFTRadiusCutTest("Pictures/toto.png", 0.3, 50)
 
-#if __name__=="__main__": Tests.FTsTimeTest(1, 10, 1)
+#if __name__=="__main__": Tests.FTsTimeTest(1, 1001, 100)
 
 #Tests.FFTAmplitudeCutTest("Pictures/toto.png", 6, True)

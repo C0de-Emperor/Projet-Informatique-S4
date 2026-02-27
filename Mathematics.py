@@ -314,7 +314,7 @@ class ComplexDiscreteFunction (DiscreteFunction):
         im.show()
     
     def RadiusFilter(self, radiusFraction:float):
-        radius=min(self.height, self.width)*radiusFraction/2
+        radius=max(self.height, self.width)*radiusFraction/2*sqrt(2)
         for i in range(self.width):
             for j in range(self.height):
                 distances=[radius > sqrt((i-x)**2+(j-y)**2) for (x,y) in [(0,0), (0, self.height), (self.width, 0), (self.width, self.height)]]

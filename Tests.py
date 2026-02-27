@@ -291,11 +291,11 @@ def FTsTimeTest(start, end, step):
 
         #if __name__=="__main__":
         startTime=time.time()
-        #FFT2Boost(a, 2)
+        FFT2Boost(a, 2)
         boostedHomemadeSeries.append(time.time()-startTime)
 
         startTime=time.time()
-        FourierTransform(a)
+        #FourierTransform(a)
         dft.append(time.time()-startTime)
 
         print(int((n-start+step)*100/(end-start)), "%")
