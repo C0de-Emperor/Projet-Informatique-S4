@@ -154,7 +154,7 @@ def IFFT(data:list, completionMode:int, floatResult:bool=False, firstTime:bool=F
 
     return mat
 
-def IFFT2(kernel:list[list[complex]], completionMode:int) -> list[list[float]]:
+def IFFT2(kernel:list[list[complex]], completionMode:int=2) -> list[list[float]]:
     horizontalFFTKernel=[]
     finishedFFTKernel=[]
 

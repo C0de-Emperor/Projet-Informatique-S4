@@ -201,7 +201,7 @@ class DiscreteFunction:
         for i in range(self.width):
             for j in range(self.height):
                 if self[i,j]>maxV: maxV=self[i,j]
-                if self[i,j]<minV: minV=self[i,j]
+                if self[i,j]<minV and self[i,j]!=float("-inf"): minV=self[i,j]
 
         for i in range(self.width):
             for j in range(self.height):
@@ -238,13 +238,6 @@ class DiscreteFunction:
 
         return sqrt(variance)
 
-    def RadiusFilter(self, radius:float):
-        for i in range(self.width):
-            for j in range(self.height):
-                distances=[radius > sqrt((i-x)**2+(j-y)**2) for (x,y) in [(0,0), (0, self.height), (self.width, 0), (self.width, self.height)]]
-                if sum(distances) == 0:
-                    self[i,j]=0
-
     def apply(self, func, *args, **kwargs):
         func(self, *args, **kwargs)
         return self
@@ -255,36 +248,6 @@ class DiscreteFunction:
     def show(self):
         image = getImageFromDiscreteFunction(self)
         image.show()
-
-    def getRevolve(self):
-        mat : list[list] = []
-
-        for j in range(self.height*2):
-            mat.append([])
-            for i in range(self.width*2):
-                if j<self.height:
-                    if i>=self.width:
-                        mat[j].append(self[i-self.width, self.height-j])
-                    else:
-                        mat[j].append(self[self.width-i, self.height-j])
-                else:
-                    if i>=self.width:
-                        mat[j].append(self[i-self.width, j-self.height])
-                    else:
-                        mat[j].append(self[self.width-i, j-self.height])
-        
-        return DiscreteFunction(mat)
-    
-    def maxAmplitudeCut(self, maxValue, isLog:bool=False):
-        for i in range(self.width):
-            for j in range(self.height):
-                if (i,j)!=(0,0):
-                    if isLog:
-                        if log(abs(self[i,j]), 10) >= maxValue:
-                            self[i,j]=0
-                    else:
-                        if abs(self[i,j]) >= maxValue:
-                            self[i,j]=0
 
 
 class DiscreteFunctionFromImage (DiscreteFunction):
@@ -349,6 +312,40 @@ class ComplexDiscreteFunction (DiscreteFunction):
 
         im=getImageFromDiscreteFunction(mat)
         im.show()
+    
+    def RadiusFilter(self, radiusFraction:float):
+        radius=min(self.height, self.width)*radiusFraction/2
+        for i in range(self.width):
+            for j in range(self.height):
+                distances=[radius > sqrt((i-x)**2+(j-y)**2) for (x,y) in [(0,0), (0, self.height), (self.width, 0), (self.width, self.height)]]
+                if sum(distances) == 0:
+                    self[i,j]=0
+    
+    def AmplitudeCutFilter(self, maxValueFraction):
+        maxValue=abs(self[self.width//2, self.height//2])*maxValueFraction
+        for i in range(self.width):
+            for j in range(self.height):
+                if abs(self[i,j]) <= maxValue:
+                    self[i,j]=0
+    
+    def getRevolve(self):
+        mat : list[list] = []
+
+        for j in range(self.height*2):
+            mat.append([])
+            for i in range(self.width*2):
+                if j<self.height:
+                    if i>=self.width:
+                        mat[j].append(self[i-self.width, self.height-j])
+                    else:
+                        mat[j].append(self[self.width-i, self.height-j])
+                else:
+                    if i>=self.width:
+                        mat[j].append(self[i-self.width, j-self.height])
+                    else:
+                        mat[j].append(self[self.width-i, j-self.height])
+        
+        return ComplexDiscreteFunction(mat)
 
 
 class DiscreteConvertionError(Exception):

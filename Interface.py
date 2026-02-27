@@ -23,6 +23,8 @@ class Tab:
         global nextAvailableId
 
         self.alive=True
+        self.frequencyDomain=False
+        self.trueSize=None
 
         self.id=nextAvailableId
         nextAvailableId+=1
@@ -52,6 +54,8 @@ class Tab:
     def showSelf(self, upImage:bool=False, upInfos:bool=False, clicked:bool=False):
         global currentTab
 
+        currentTab=self
+
         if currentTab != None: currentTab.tabButton.configure(fg_color=("#3B8ED0", "#1F6AA5"))
         self.tabButton.configure(fg_color=("#1F6AA5", "#3B8ED0"))
 
@@ -64,21 +68,16 @@ class Tab:
         if self.discreteFunction == None or not isinstance(self.discreteFunction, DiscreteFunction): imageProcessingPanel.destroyButtons()
 
         fileEditingPanel.updateName(self.name)
-
-        currentTab=self
     
     def updateImage(self):
         global imageContainer
 
         if isinstance(self.image, Image.Image):
-            scalingFactor=min(imageContainer.winfo_width()/self.image.width, imageContainer.winfo_height()/self.image.height)
-
-            imageContainer.pack_forget()
+            scalingFactor=min(imageContainer.winfo_width()/self.image.width, imageContainer.winfo_height()/self.image.height)/window._get_window_scaling()
 
             image=ctk.CTkImage(self.image, self.image, (self.image.width*scalingFactor, self.image.height*scalingFactor))
-            imageContainer=ctk.CTkLabel(middleContainer, image=image, text="")
-
-            imageContainer.pack(fill="both", expand=True)
+            imageContainer.configure(image=image)
+            imageContainer.configure(text="")
         else:
             imageContainer.pack_forget()
 
@@ -105,6 +104,11 @@ class Tab:
 
         if currentTab==self:
             self.showSelf(upInfos=True)
+    
+    def getTrueSize(self):
+        if self.trueSize == None:
+            return self.parentTab.getTrueSize()
+        return self.trueSize
 
 class TabFromImage(Tab):
     def __init__(self, name:str, image:Image.Image, parent:Tab=None):
@@ -116,6 +120,7 @@ class TabFromImage(Tab):
         if not self.alive: return
 
         self.image=element
+        self.trueSize=self.image.size
 
         self.discreteFunction=mainPool.apply_async(getKernelFromImage, (self.image, (0.299, 0.587, 0.114)), callback=self.changeDiscreteFunction)
 
@@ -133,15 +138,25 @@ class TabFromImage(Tab):
         window.after(0, imageProcessingPanel.setButtons)
 
 class TabFromDiscreteFunction(Tab):
-    def __init__(self, name:str, discreteFunction:DiscreteFunction, parent:Tab=None):
+    def __init__(self, name:str, discreteFunction:DiscreteFunction, parent:Tab=None, frequencyDomain:bool=False):
         super().__init__(name[1:], parent)
 
+        self.frequencyDomain=frequencyDomain
         self.discreteFunction=discreteFunction
-        self.image=mainPool.apply_async(getImageFromDiscreteFunction, (self.discreteFunction,), callback=self.changeImage)
+        self.image=mainPool.apply_async(TabFromDiscreteFunction.getImageOrModule, (self.discreteFunction, self.frequencyDomain), callback=self.changeImage)
         self.getInfos()
+        
+        #imageProcessingPanel.setButtons()
+    
+    def getImageOrModule(discreteFunction:DiscreteFunction, frequencyDomain:DiscreteFunction):
+        if frequencyDomain:
+            discreteFunction=discreteFunction.getModule()
+            discreteFunction.resizeAmplitude()
+        
+        return getImageFromDiscreteFunction(discreteFunction)
     
     def changeImage(self, element):
-        if not self.alive: return 
+        if not self.alive: return
 
         self.image=element
 
@@ -150,15 +165,27 @@ class TabFromDiscreteFunction(Tab):
             self.showSelf(upImage=True)
 
 class TabFromFunction(Tab):
-    def __init__(self, name:str, discreteFunction:DiscreteFunction, function, args, parent:Tab=None):
+    def __init__(self, name:str, function, args, parent:Tab=None):
         super().__init__("*"+name, parent)
 
-        functionProcess=mainPool.apply_async(TabFromFunction.applyFunction, (discreteFunction, function, args), callback=self.changeDiscreteFunction)
+        self.function=function
+        mainPool.apply_async(TabFromFunction.applyFunction, (parent.discreteFunction, function, args), callback=self.changeDiscreteFunction)
     
     def changeDiscreteFunction(self, element):
         if not self.alive: return 
 
-        tab=TabFromDiscreteFunction(self.name, element, self.parentTab)
+        if self.function==ComplexDiscreteFunctionIFFT2:
+            trueSize=self.getTrueSize()
+            kernel=element.kernel[:trueSize[1]]
+            kernel=[[element[i,j] for i in range(trueSize[0])] for j in range(len(kernel))]
+            element=DiscreteFunction(kernel)
+
+            tab=TabFromDiscreteFunction(self.name, element, self.parentTab, not self.parentTab.frequencyDomain)
+        elif self.function==DiscreteFunctionFFT2:
+            tab=TabFromDiscreteFunction(self.name, element, self.parentTab, not self.parentTab.frequencyDomain)
+        else:
+            tab=TabFromDiscreteFunction(self.name, element, self.parentTab, self.parentTab.frequencyDomain)
+
         tab.showSelf(upImage=True, upInfos=True, clicked=True)
 
         self.tabFrame.pack_forget()
@@ -182,7 +209,7 @@ class ImageInfosPanel:
         
         ctk.CTkLabel(self.frame, text="Image Characteristics :", font=titleFont).pack()
         
-        self.infos={"Width":0, "Height":0, "Number of pixels":0, "Local Variance":0, "Gradient Energy":0, "High Frequency Ratio":2}
+        self.infos={"Width":0, "Height":0, "Number of pixels":0, "Local Variance":0, "Gradient Energy":0, "High Frequency Ratio":4}
 
         self.setInfos()
     
@@ -206,10 +233,12 @@ class ImageProcessingPanel:
         self.frame=ctk.CTkFrame(rightContainer)
         self.frame.pack(side="top", fill="x", pady=(5,0))
 
-        self.functions={"Bruitage poivre et sel": (saltAndPaperNoising, "probability"),
-                        "Bruitage aléatoire": (randomNoising, "minAdd", "maxAdd"),
-                        "FFT2": (DiscreteFunctionFFT2Module,),
-                        "Filtre médian": (DiscreteFunction.medianFilter, "rayon")}
+        self.spatialFunctions={"Bruitage poivre et sel": (saltAndPaperNoising, "probability"),
+                                "Bruitage aléatoire": (randomNoising, "minAdd", "maxAdd"),
+                                "Filtre médian": (DiscreteFunction.medianFilter, "radius")}
+        
+        self.frequencyFunctions={"Filtre d'amplitude": (ComplexDiscreteFunction.AmplitudeCutFilter, "maxAmp fraction"),
+                                "Filtre passe bas": (ComplexDiscreteFunction.RadiusFilter, "radius fraction")}
     
     def destroyButtons(self):
         for widget in self.frame.winfo_children():
@@ -219,6 +248,13 @@ class ImageProcessingPanel:
         self.buttons={}
 
         ctk.CTkLabel(self.frame, text="Image Processing Actions :", font=titleFont).pack(padx=10)
+
+        if currentTab.frequencyDomain:
+            self.functions=self.frequencyFunctions
+            self.functions["IFFT2"]=(ComplexDiscreteFunctionIFFT2,)
+        else:
+            self.functions=self.spatialFunctions
+            self.functions["FFT2"]=(DiscreteFunctionFFT2,)
 
         for key, value in self.functions.items():
             elementsList=[]
@@ -248,7 +284,7 @@ class ImageProcessingPanel:
 
         name=key+"; "+"; ".join([self.functions[key][k]+":"+str(args[k-1]) for k in range(1, len(self.functions[key]))])
 
-        tab=TabFromFunction(name, currentTab.discreteFunction, self.functions[key][0], args, currentTab)
+        tab=TabFromFunction(name, self.functions[key][0], args, currentTab)
         tab.showSelf(upImage=True, upInfos=True)
 
 class FileEditingPanel:
@@ -261,19 +297,19 @@ class FileEditingPanel:
         self.fileNameTextBox=ctk.CTkEntry(self.frame)
         self.fileNameTextBox.grid(row=0, column=0, sticky="we")
 
-        saveImageImage=ctk.CTkImage(Image.open("InterfaceData/rename.png"), Image.open("InterfaceData/rename.png"))
+        saveImageImage=ctk.CTkImage(Image.open("InterfaceData/renameL.png"), Image.open("InterfaceData/renameD.png"))
         self.renameButton=ctk.CTkButton(self.frame, image=saveImageImage, text="", width=saveImageImage._size[0], height=saveImageImage._size[1], command=self.renameImage)
         self.renameButton.grid(row=0, column=1, sticky="e")
 
-        saveImageImage=ctk.CTkImage(Image.open("InterfaceData/save.png"), Image.open("InterfaceData/save.png"))
+        saveImageImage=ctk.CTkImage(Image.open("InterfaceData/saveL.png"), Image.open("InterfaceData/saveD.png"))
         self.saveButton=ctk.CTkButton(self.frame, image=saveImageImage, text="", width=saveImageImage._size[0], height=saveImageImage._size[1], command=self.saveImage)
         self.saveButton.grid(row=0, column=2, sticky="e")
 
-        copyImageImage=ctk.CTkImage(Image.open("InterfaceData/copy.png"), Image.open("InterfaceData/copy.png"))
+        copyImageImage=ctk.CTkImage(Image.open("InterfaceData/copyL.png"), Image.open("InterfaceData/copyD.png"))
         self.copyImageButton=ctk.CTkButton(self.frame, image=copyImageImage, text="", width=copyImageImage._size[0], height=copyImageImage._size[1], command=self.copyImage)
         self.copyImageButton.grid(row=0, column=3, sticky="e")
 
-        deleteImageImage=ctk.CTkImage(Image.open("InterfaceData/delete.png"), Image.open("InterfaceData/delete.png"))
+        deleteImageImage=ctk.CTkImage(Image.open("InterfaceData/deleteL.png"), Image.open("InterfaceData/deleteD.png"))
         self.deleteImageButton=ctk.CTkButton(self.frame, image=deleteImageImage, text="", width=deleteImageImage._size[0], height=deleteImageImage._size[1], command=self.deleteImage)
         self.deleteImageButton.grid(row=0, column=4, sticky="e")
     
@@ -318,17 +354,20 @@ class FileEditingPanel:
             self.updateName("")
 
 
-def DiscreteFunctionFFT2Module(discreteFunction:DiscreteFunction) -> DiscreteFunction:
+def ComplexDiscreteFunctionIFFT2(discreteFunction:ComplexDiscreteFunction):
+    ifft2Kernel=IFFT2(discreteFunction.kernel, 2)
+    
+    IFFT2DiscreteFunction=DiscreteFunction(ifft2Kernel)
+    return IFFT2DiscreteFunction
+
+def DiscreteFunctionFFT2(discreteFunction:DiscreteFunction) -> DiscreteFunction:
     #if discreteFunction.width*discreteFunction.height > 512**2: fft2Kernel=FFT2Boost(discreteFunction.kernel)
     #else: fft2Kernel=FFT2(discreteFunction.kernel)
     fft2Kernel=FFT2(discreteFunction.kernel)
 
     FFT2DiscreteFunction=ComplexDiscreteFunction(fft2Kernel)
-    FFT2DiscreteFunctionModule=FFT2DiscreteFunction.getModule(True)
-    FFT2DiscreteFunctionModule.resizeAmplitude()
-    #FFT2DiscreteFunctionModuleRevolved=FFT2DiscreteFunctionModule.getRevolve()
 
-    return FFT2DiscreteFunctionModule#Revolved
+    return FFT2DiscreteFunction
 
 def importImageFromClipboard(event):
     image=paste()
@@ -381,7 +420,7 @@ currentTab:Tab=None
 
 window=ctk.CTk()
 window.title="Projet Maths-Info S4"
-window.geometry("1200x800")
+window.geometry("1000x600")
 window.bind("<Control-v>", importImageFromClipboard)
 
 titleFont=ctk.CTkFont("font1", 13, "bold", underline=True)
