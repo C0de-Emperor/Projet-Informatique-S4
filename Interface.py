@@ -41,6 +41,9 @@ class Tab:
             tabs.append(self)
         else: 
             self.parentFrame=parent.tabFrame
+            parent.childrenTabs.append(self)
+
+        self.childrenTabs=[]
 
         self.createTabElement()
     
@@ -235,7 +238,9 @@ class ImageProcessingPanel:
 
         self.spatialFunctions={"Bruitage poivre et sel": (saltAndPaperNoising, "probability"),
                                 "Bruitage aléatoire": (randomNoising, "minAdd", "maxAdd"),
-                                "Filtre médian": (DiscreteFunction.medianFilter, "radius")}
+                                "Filtre médian": (DiscreteFunction.medianFilter, "radius"),
+                                "Filtre adaptatif": (DiscreteFunctionAdaptativeFilter, "kernel size", "max diff"),
+                                "Filtre bilatéral": (DiscreteFunctionBilateralFilter, "kernel size", "variance de la normale")}
         
         self.frequencyFunctions={"Filtre d'amplitude": (ComplexDiscreteFunction.AmplitudeCutFilter, "maxAmp fraction"),
                                 "Filtre passe bas": (ComplexDiscreteFunction.RadiusFilter, "radius fraction")}
@@ -353,6 +358,16 @@ class FileEditingPanel:
             imageProcessingPanel.destroyButtons()
             self.updateName("")
 
+
+def DiscreteFunctionBilateralFilter(discreteFunction:DiscreteFunction, kernelSize:float, sigma_r:float):
+    gaussianDiscreteFunction=GaussianDiscreteFunction(kernelSize)
+
+    return discreteFunction.bilateralFilter(gaussianDiscreteFunction, sigma_r)
+
+def DiscreteFunctionAdaptativeFilter(discreteFunction:DiscreteFunction, kernelSize:float, diff:float):
+    gaussianDiscreteFunction=GaussianDiscreteFunction(kernelSize)
+
+    return discreteFunction.adaptativeGaussianConvolution(gaussianDiscreteFunction, diff)
 
 def ComplexDiscreteFunctionIFFT2(discreteFunction:ComplexDiscreteFunction):
     ifft2Kernel=IFFT2(discreteFunction.kernel, 2)
