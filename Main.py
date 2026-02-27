@@ -1,5 +1,6 @@
 import Tests
-from numpy import fft
+import Analysis, Noising
+from Mathematics import *
 
 #Tests.AdaptativeGaussianFilterTest(r'Pictures\Garden_strawberry.jpg')
 
@@ -17,4 +18,12 @@ from numpy import fft
 
 #if __name__=="__main__": Tests.FTsTimeTest(1, 1001, 100)
 
-#Tests.FFTAmplitudeCutTest("Pictures/toto.png", 6, True)
+#Tests.AnalysisSaltAndPaperCurveVSMedian("Pictures/Garden_strawberry.jpg", p_max=1, steps=60)
+
+#Tests.AnalysisRandomNoisingCurveVSGaussian("Pictures/Garden_strawberry.jpg", amplitude= 40, steps=60)
+
+f = DiscreteFunctionFromImage(r'Pictures\Garden_strawberry.jpg')
+Analysis.SaltAndPepperDetection(f)
+f.apply(Noising.saltAndPaperNoising, 0.2)
+
+Analysis.SaltAndPepperDetection(f)

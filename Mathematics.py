@@ -224,11 +224,17 @@ class DiscreteFunction:
         self.kernel = newKernel
         return self
 
-    def getStandardDeviation(self):
-        from math import sqrt
-
+    def Expectation(self):
         N = self.width * self.height
-        mean = sum(self[i, j] for j in range(self.height) for i in range(self.width)) / N
+        total = 0
+        for j in range(self.height):
+            for i in range(self.width):
+                total += self[i, j]
+        return total / N
+
+    def Variance (self):
+        mean = self.Expectation()
+        N = self.width * self.height
 
         variance = sum(
             (self[i, j] - mean)**2
@@ -236,7 +242,11 @@ class DiscreteFunction:
             for i in range(self.width)
         ) / N
 
-        return sqrt(variance)
+        return variance
+
+    def StandardDeviation(self):
+        from math import sqrt
+        return sqrt(self.Variance())
 
     def apply(self, func, *args, **kwargs):
         func(self, *args, **kwargs)
@@ -282,13 +292,14 @@ class ComplexDiscreteFunction (DiscreteFunction):
     def __init__(self, kernel:list[list[complex]], x = 0, y = 0):
         super().__init__(kernel, x, y)
 
-    def getModule(self, logarithmic:bool=True):
-        mat=[]
+    def getModule(self, logarithmic:bool=True) -> DiscreteFunction:
+        mat: list[list] = []
 
         for j in range(self.height):
             mat.append([])
             for i in range(self.width):
                 if logarithmic: 
+                    print(i,j)
                     if self[i,j] != 0+0j: mat[j].append(log(abs(self[i,j]), 10))
                     else: mat[j].append(float("-inf"))
                 else: mat[j].append(abs(self[i,j]))

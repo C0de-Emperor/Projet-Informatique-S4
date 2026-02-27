@@ -2,11 +2,12 @@ from Mathematics import *
 from ImageMethods import *
 from Noising import *
 from Analysis import *
-from numpy import fft
+from numpy import fft, linspace
 from matplotlib import pyplot as plt
-import random
 import time
 import os
+
+# Analysis
 
 def AnalysisSaltAndPaperTest (path: str, probability: float):
     if not os.path.exists(path):
@@ -58,6 +59,189 @@ def AnalysisAdaptativeGaussianTest (path: str, minV: int, maxV: int, sigma:float
     print("Quality Score after : ", QualityScore(g))
 
     g.show()
+
+# Analysis Curves
+
+import os
+import matplotlib.pyplot as plt
+import numpy as np
+
+def AnalysisSaltAndPaperCurveVSMedian(path: str, p_max=0.5, steps=20):
+
+    if not os.path.exists(path):
+        raise FileExistsError(f"{path} does not exist")
+
+    probs = np.linspace(0, p_max, steps)
+
+    # Valeurs stockées
+    var_noise = []
+    var_filtered = []
+
+    grad_noise = []
+    grad_filtered = []
+
+    score_noise = []
+    score_filtered = []
+
+    # Image originale (une seule fois)
+    f_original = DiscreteFunctionFromImage(path)
+
+    var_original = LocalVariance(f_original)
+    grad_original = GradientEnergy(f_original)
+    score_original = QualityScore(f_original)
+
+    for p in probs:
+        f = DiscreteFunctionFromImage(path)
+
+        # Bruitage
+        f.apply(saltAndPaperNoising, p)
+
+        var_noise.append(LocalVariance(f))
+        grad_noise.append(GradientEnergy(f))
+        score_noise.append(QualityScore(f))
+
+        # Filtrage
+        f.medianFilter(1)
+
+        var_filtered.append(LocalVariance(f))
+        grad_filtered.append(GradientEnergy(f))
+        score_filtered.append(QualityScore(f))
+
+    # =========================
+    # 1 - Variance
+    # =========================
+    plt.figure()
+    plt.plot(probs, [var_original]*len(probs))
+    plt.plot(probs, var_noise)
+    plt.plot(probs, var_filtered)
+    plt.xlabel("Probability")
+    plt.ylabel("Local Variance")
+    plt.title("Local Variance vs Salt & Pepper Probability")
+    plt.legend(["Original", "With Noise", "After Median"])
+    plt.show()
+
+    # =========================
+    # 2 - Gradient
+    # =========================
+    plt.figure()
+    plt.plot(probs, [grad_original]*len(probs))
+    plt.plot(probs, grad_noise)
+    plt.plot(probs, grad_filtered)
+    plt.xlabel("Probability")
+    plt.ylabel("Gradient Energy")
+    plt.title("Gradient Energy vs Salt & Pepper Probability")
+    plt.legend(["Original", "With Noise", "After Median"])
+    plt.show()
+
+    # =========================
+    # 3 - Quality Score
+    # =========================
+    plt.figure()
+    plt.plot(probs, [score_original]*len(probs))
+    plt.plot(probs, score_noise)
+    plt.plot(probs, score_filtered)
+    plt.xlabel("Probability")
+    plt.ylabel("Quality Score")
+    plt.title("Quality Score vs Salt & Pepper Probability")
+    plt.legend(["Original", "With Noise", "After Median"])
+    plt.show()
+
+def AnalysisRandomNoisingCurveVSGaussian(path: str, amplitude=10, sigma=0.6, steps=40, trials=3):
+    if not os.path.exists(path):
+        raise FileExistsError(f"{path} does not exist")
+
+    amplitudes = np.linspace(0, amplitude, steps)
+
+    var_noise = []
+    var_filtered = []
+
+    grad_noise = []
+    grad_filtered = []
+
+    score_noise = []
+    score_filtered = []
+
+    # Image originale
+    f_original = DiscreteFunctionFromImage(path)
+
+    var_original = LocalVariance(f_original)
+    grad_original = GradientEnergy(f_original)
+    score_original = QualityScore(f_original)
+
+    g = GaussianDiscreteFunction(sigma)
+
+    for a in amplitudes:
+
+        var_n = grad_n = score_n = 0
+        var_f = grad_f = score_f = 0
+
+        # moyenne sur plusieurs tirages
+        for _ in range(trials):
+
+            f = DiscreteFunctionFromImage(path)
+
+            # Bruit uniforme [-a, a]
+            f.apply(randomNoising, int(-a), int(a))
+
+            var_n += LocalVariance(f)
+            grad_n += GradientEnergy(f)
+            score_n += QualityScore(f)
+
+            # Filtrage gaussien
+            f_filtered = f.convolve(g)
+
+            var_f += LocalVariance(f_filtered)
+            grad_f += GradientEnergy(f_filtered)
+            score_f += QualityScore(f_filtered)
+
+        var_noise.append(var_n / trials)
+        grad_noise.append(grad_n / trials)
+        score_noise.append(score_n / trials)
+
+        var_filtered.append(var_f / trials)
+        grad_filtered.append(grad_f / trials)
+        score_filtered.append(score_f / trials)
+
+    # =========================
+    # 1 - Variance
+    # =========================
+    plt.figure()
+    plt.plot(amplitudes, [var_original]*len(amplitudes))
+    plt.plot(amplitudes, var_noise)
+    plt.plot(amplitudes, var_filtered)
+    plt.xlabel("Noise Amplitude")
+    plt.ylabel("Local Variance")
+    plt.title("Local Variance vs Random Noise Amplitude")
+    plt.legend(["Original", "With Noise", "After Gaussian"])
+    plt.show()
+
+    # =========================
+    # 2 - Gradient
+    # =========================
+    plt.figure()
+    plt.plot(amplitudes, [grad_original]*len(amplitudes))
+    plt.plot(amplitudes, grad_noise)
+    plt.plot(amplitudes, grad_filtered)
+    plt.xlabel("Noise Amplitude")
+    plt.ylabel("Gradient Energy")
+    plt.title("Gradient Energy vs Random Noise Amplitude")
+    plt.legend(["Original", "With Noise", "After Gaussian"])
+    plt.show()
+
+    # =========================
+    # 3 - Quality Score
+    # =========================
+    plt.figure()
+    plt.plot(amplitudes, [score_original]*len(amplitudes))
+    plt.plot(amplitudes, score_noise)
+    plt.plot(amplitudes, score_filtered)
+    plt.xlabel("Noise Amplitude")
+    plt.ylabel("Quality Score")
+    plt.title("Quality Score vs Random Noise Amplitude")
+    plt.legend(["Original", "With Noise", "After Gaussian"])
+    plt.show()
+
+# Filters
 
 def MedianFilterTest (path: str):
     if not os.path.exists(path):
@@ -169,6 +353,8 @@ def RadiusCutTest(path:str, radius:float, x:int=0, y:int=0, centered:bool=False)
 
     discreteImage.show()
 
+# Fourier
+
 def InverseFourierTransformTest(path: str, rayonMax:int=-1):
     discreteImage=DiscreteFunctionFromImage(path)
 
@@ -178,7 +364,7 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
     FM_discreteImage = FourierTransform(discreteImage)
     print("DFT :", time.time() - start)
 
-    matrice = [] # car sinon probleme de fréquence et informations en trop
+    matrice: list[list] = [] # car sinon probleme de fréquence et informations en trop
     for j in range(h):
         matrice.append([])
         for i in range(w):
@@ -194,13 +380,13 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
     for j in range(h):
         ligne = []
         for i in range(w):
-            pixel = Inverse_discreteImage.kernel[h - 1 - j][w - 1 - i]
+            pixel = Inverse_discreteImage[w - 1 - i, h - 1 - j]
             ligne.append(pixel)
         matrice_finale.append(ligne)
 
-    Inverse_discreteImage = DiscreteFunction(matrice_finale)
+    Inverse_discreteImage = ComplexDiscreteFunction(matrice_finale)
 
-    Inverse_discreteImage=Inverse_discreteImage.getModule(False)
+    Inverse_discreteImage = Inverse_discreteImage.getModule(False)
     Inverse_discreteImage.resizeAmplitudeDiscreteFunction()
 
     start = time.time()
@@ -211,8 +397,8 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
     numpyInverse = fft.ifft2(numpyFFT)
     print("Numpy Inverse FFT :", time.time() - start)
 
-    numpyFM=DiscreteFunction(numpyInverse.tolist())
-    numpyFM=numpyFM.getModule(False)
+    numpyFM = ComplexDiscreteFunction(numpyInverse.tolist())
+    numpyFM = numpyFM.getModule(False)
     numpyFM.resizeAmplitude()
 
     Inverse_discreteImage.show()
@@ -220,7 +406,6 @@ def InverseFourierTransformTest(path: str, rayonMax:int=-1):
 
     saveImageFromDiscreteFunction(Inverse_discreteImage, 'Pictures/Inverse_image.png')
     saveImageFromDiscreteFunction(numpyFM, "Pictures/Numpy_Inverse_image.png")
-
 
 def FFT2DTest(path: str, completionMode:int):
     im=DiscreteFunctionFromImage(path)
@@ -275,11 +460,20 @@ def FTsTimeTest(start, end, step):
     numpySeries=[]
     homemadeSeries=[]
     boostedHomemadeSeries=[]
+    fourierTransform=[]
     dft=[]
 
     for n in range(start, end, step):
         pixels.append(n)
         a=[[i*j for i in range(n)] for j in range(n)]
+
+        startTime=time.time()
+        #FourierTransform(a)
+        fourierTransform.append(time.time()-startTime)
+
+        startTime=time.time()
+        #DFT(a)
+        dft.append(time.time()-startTime)
 
         startTime=time.time()
         fft.fft2(a)
@@ -294,16 +488,13 @@ def FTsTimeTest(start, end, step):
         FFT2Boost(a, 2)
         boostedHomemadeSeries.append(time.time()-startTime)
 
-        startTime=time.time()
-        #FourierTransform(a)
-        dft.append(time.time()-startTime)
-
-        print(int((n-start+step)*100/(end-start)), "%")
+        print("--------", int((n-start+step)*100/(end-start)), "%")
     
     plt.plot(pixels, numpySeries, "-b", label="fft numpy")
     plt.plot(pixels, homemadeSeries, "-r", label="notre fft")
     plt.plot(pixels, boostedHomemadeSeries, "-g", label="notre fft+multiprocessing")
-    plt.plot(pixels, dft, "-m", label="notre dft classique")
+    plt.plot(pixels, fourierTransform, "-m", label="transformée de Fourier classique")
+    plt.plot(pixels, dft, "-c", label="dft sur lignes puis colonnes")
     plt.legend(loc="upper left")
     plt.xlabel("pixels on image's side")
     plt.ylabel("time taken to compute the FFT")
@@ -320,3 +511,32 @@ def FFTAmplitudeCutTest(path:str, maxAmp:float, isLog:bool=False):
 
     im2=DiscreteFunction(IFFT2(imF.kernel, 2))
     im2.show()
+
+def SectionnedMultiprocessedFFT2Test(imageSize, start, end, step):
+    sections=[]
+    sectionnedBoostedFFT2=[]
+
+    a=[[i*j for i in range(imageSize)] for j in range(imageSize)]
+
+    for n in range(start, end, step):
+        sections.append(n)
+
+        #if __name__=="__main__":
+        startTime=time.time()
+        sectionnedFFT2Boost(a, n)
+        sectionnedBoostedFFT2.append(time.time()-startTime)
+
+        print("--------", int((n-start+step)*100/(end-start)), "%")
+    
+    #if __name__=="__main__":
+    startTime=time.time()
+    FFT2Boost(a, 2)
+    boostedFFT2=[time.time()-startTime]*len(sections)
+
+    plt.plot(sections, boostedFFT2, "-g", label="controle (fft2 avec multiprocessing)")
+    plt.plot(sections, sectionnedBoostedFFT2, "-c", label="fft2 avec multiprocessing et segmentation")
+    plt.legend(loc="upper left")
+    plt.xlabel("number of sections for multiprocessing")
+    plt.ylabel("time taken to compute the FFT")
+
+    plt.show()

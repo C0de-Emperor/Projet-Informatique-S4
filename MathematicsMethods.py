@@ -28,7 +28,7 @@ def GaussianKernel(sigma: float, size: int) -> list[list[float]]:
 
         return kernel
 
-def FourierTransform(kernel:list[list[float]]) -> list[list[complex]]:
+def FourierTransform(kernel:list[list[float]]) -> list[list[complex]]: # ATTENTION ne marche pas avec des non puissances de 2
     mat:list[list] = []
 
     for q in range(len(kernel)):
@@ -36,14 +36,36 @@ def FourierTransform(kernel:list[list[float]]) -> list[list[complex]]:
         print(round(q/len(kernel)*100, 1), "%")
         for p in range(len(kernel[0])):
             value=0
-            theta=e**(-2*pi*1j)
             for m in range(len(kernel[0])):
                 for n in range(len(kernel)):
-                    value+=kernel[n][m]*theta**(p*m/len(kernel[0])+q*n/len(kernel))
+                    theta=-2j*pi*(p*m/len(kernel[0])+q*n/len(kernel))
+                    value+=kernel[n][m]*e**theta
             
-            mat[q].append(value)
+            mat[-1].append(value)
     
     return mat
+
+def DFT(kernel: list[list[float]]): # ATTENTION ne marche pas avec des non puissances de 2
+    mat=[]
+
+    for q in range(len(kernel)):
+        mat.append([])
+        for p in range(len(kernel[0])):
+            value=0
+            for m in range(len(kernel[0])):
+                value+=kernel[q][m]*e**(-2j*pi*p*m/len(kernel[0]))
+            mat[-1].append(value)
+    
+    mat2=[[] for k in range(len(mat))]
+    for p in range(len(mat[0])):
+        for q in range(len(mat)):
+            value=0
+            for n in range(len(mat)):
+                value+=mat[n][p]*e**(-2j*pi*q*n/len(kernel))
+            mat2[q].append(value)
+    
+    return mat2
+
 
 def InverseFourierTransform(kernel:list[list[complex]], rayonMax: int = -1) -> list[list[float]]:
     mat: list[list] = []
@@ -128,6 +150,44 @@ def FFT2Boost(kernel:list[list[complex]], completionMode:int=2, pool=None):
             finishedFFTKernel[n].append(results[k][n])
     
     return finishedFFTKernel
+
+def sectionnedFFT2Base(kernel):
+    return [FFT(k, 2) for k in kernel]
+
+def sectionnedFFT2Boost(kernel:list[list[float]], numberOfSections:int):
+    from multiprocessing import Pool
+
+    pool=Pool()
+    horizontalFFTKernel=[]
+
+    newKernel=[]
+    for k in range(0, len(kernel), len(kernel)//numberOfSections):
+        newKernel.append(kernel[k:k+len(kernel)//numberOfSections])
+    
+    for section in pool.map(sectionnedFFT2Base, newKernel):
+        horizontalFFTKernel+=section
+    
+    transposed=[[] for k in range(len(horizontalFFTKernel[0]))]
+
+    for k in range(len(horizontalFFTKernel)):
+        for n in range(len(horizontalFFTKernel[k])):
+            transposed[n].append(horizontalFFTKernel[k][n])
+    
+    newKernel=[]
+    for k in range(0, len(transposed), len(transposed)//numberOfSections):
+        newKernel.append(transposed[k:k+len(transposed)//numberOfSections])
+
+    results=[]
+    for section in pool.map(sectionnedFFT2Base, newKernel):
+        results+=section
+    
+    finishedFFTKernel=[[] for k in range(len(results[0]))]
+    for k in range(len(results)):
+        for n in range(len(results[k])):
+            finishedFFTKernel[n].append(results[k][n])
+    
+    return finishedFFTKernel
+
 
 def IFFT(data:list, completionMode:int, floatResult:bool=False, firstTime:bool=False) -> list[float]:
     if len(data)==1: 
