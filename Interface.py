@@ -9,6 +9,7 @@ from pyperclipimg import copy, paste
 from Mathematics import *
 from MathematicsMethods import *
 from ImageMethods import *
+from InterfaceMethods import *
 from Noising import *
 from Analysis import *
 
@@ -99,6 +100,7 @@ class Tab:
             self.infos["Local Variance"]=mainPool.apply_async(getInfoForCallback, (self.discreteFunction, "Local Variance"), callback=self.changeInfo)
             self.infos["Gradient Energy"]=mainPool.apply_async(getInfoForCallback, (self.discreteFunction, "Gradient Energy"), callback=self.changeInfo)
             self.infos["High Frequency Ratio"]=mainPool.apply_async(getInfoForCallback, (self.discreteFunction, "High Frequency Ratio"), callback=self.changeInfo)
+            self.infos["Historigram"]=mainPool.apply_async(getInfoForCallback, (self.discreteFunction, "Historigram"), callback=self.changeInfo)
     
     def changeInfo(self, element):
         if not self.alive: return
@@ -214,7 +216,7 @@ class ImageInfosPanel:
         
         ctk.CTkLabel(self.frame, text="Image Characteristics :", font=titleFont).pack()
         
-        self.infos={"Width":0, "Height":0, "Number of pixels":0, "Local Variance":0, "Gradient Energy":0, "High Frequency Ratio":4}
+        self.infos={"Width":0, "Height":0, "Number of pixels":0, "Local Variance":0, "Gradient Energy":0, "High Frequency Ratio":4, "Historigram":0}
 
         self.setInfos()
     
@@ -228,10 +230,20 @@ class ImageInfosPanel:
 
     def updateInfos(self, newInfos:dict):
         for key, value in self.infosLabels.items():
-            if key in newInfos.keys() and (isinstance(newInfos[key], int) or isinstance(newInfos[key], float)):
-                value.configure(text=key+": "+str(round(newInfos[key], self.infos[key])))
+            if key in newInfos.keys():
+                if isinstance(newInfos[key], int) or isinstance(newInfos[key], float):
+                    value.configure(text=key+": "+str(round(newInfos[key], self.infos[key])))
+                elif isinstance(newInfos[key], tuple) and isinstance(newInfos[key][0], Image.Image):
+                    labelImage=ctk.CTkImage(newInfos[key][0], newInfos[key][1], (255,100))
+                    value.configure(text="Historigram")
+                    value.configure(image=labelImage)
+                else:
+                    value.configure(text=key+": -")
+                    value.configure(image="")
             else:
                 value.configure(text=key+": -")
+                value.configure(image="")
+
 
 class ImageProcessingPanel:
     def __init__(self):
@@ -370,31 +382,6 @@ class FileEditingPanel:
                 currentTab.showSelf(upImage=True, upInfos=True, clicked=True)
 
 
-def DiscreteFunctionBilateralFilter(discreteFunction:DiscreteFunction, kernelSize:float, sigma_r:float):
-    gaussianDiscreteFunction=GaussianDiscreteFunction(kernelSize)
-
-    return discreteFunction.bilateralFilter(gaussianDiscreteFunction, sigma_r)
-
-def DiscreteFunctionAdaptativeFilter(discreteFunction:DiscreteFunction, kernelSize:float, diff:float):
-    gaussianDiscreteFunction=GaussianDiscreteFunction(kernelSize)
-
-    return discreteFunction.adaptativeGaussianConvolution(gaussianDiscreteFunction, diff)
-
-def ComplexDiscreteFunctionIFFT2(discreteFunction:ComplexDiscreteFunction):
-    ifft2Kernel=IFFT2(discreteFunction.kernel, 2)
-    
-    IFFT2DiscreteFunction=DiscreteFunction(ifft2Kernel)
-    return IFFT2DiscreteFunction
-
-def DiscreteFunctionFFT2(discreteFunction:DiscreteFunction, ) -> DiscreteFunction:
-    #if discreteFunction.width*discreteFunction.height > 512**2: fft2Kernel=FFT2Boost(discreteFunction.kernel, pool=mainPool)
-    #else: fft2Kernel=FFT2(discreteFunction.kernel)
-    fft2Kernel=FFT2(discreteFunction.kernel)
-
-    FFT2DiscreteFunction=ComplexDiscreteFunction(fft2Kernel)
-
-    return FFT2DiscreteFunction
-
 def importImageFromClipboard(event):
     image=paste()
     if image==None: return
@@ -416,10 +403,6 @@ def importNewImage():
 
     tab=TabFromImage(filename.split(".")[:-1], image)
     tab.showSelf(upImage=True, upInfos=True)
-
-def getInfoForCallback(discreteFunction, infoName):
-    a={"Local Variance":LocalVariance, "Gradient Energy":GradientEnergy, "High Frequency Ratio":HighFrequencyRatio}
-    return a[infoName](discreteFunction), infoName
 
 def addErrorMessage(message:str):
     errorMessageTextboxValue=errorMessageLabel.cget("text")
@@ -445,7 +428,7 @@ def removeErrorMessage():
 currentTab:Tab=None
 
 window=ctk.CTk()
-window.title="Projet Maths-Info S4"
+window.title("Projet Maths-Info S4")
 window.geometry("1000x600")
 window.bind("<Control-v>", importImageFromClipboard)
 
@@ -485,6 +468,7 @@ panedWindow.add(rightContainer, minsize=300, stretch="never")
 imageInfosPanel=ImageInfosPanel()
 
 imageProcessingPanel=ImageProcessingPanel()
+
 
 if __name__=="__main__":
     mainPool=Pool()

@@ -259,6 +259,17 @@ class DiscreteFunction:
         image = getImageFromDiscreteFunction(self)
         image.show()
 
+    def getHistorigram(self):
+        histogram=[0 for k in range(256)]
+
+        for i in range(self.width):
+            for j in range(self.height):
+                if self[i,j] <= 0: histogram[0]+=1
+                elif self[i,j] >= 255: histogram[255]+=1
+                else: histogram[self[i,j]]+=1
+
+        return histogram
+
 
 class DiscreteFunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
