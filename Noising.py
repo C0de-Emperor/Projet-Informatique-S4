@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from Mathematics import DiscreteFunction
 
-def saltAndPaperNoising(discreteFunction: "DiscreteFunction", probability: float):
+def SaltAndPaperNoising(discreteFunction: "DiscreteFunction", probability: float):
     import random
     
     for j in range(discreteFunction.height):
@@ -13,7 +13,7 @@ def saltAndPaperNoising(discreteFunction: "DiscreteFunction", probability: float
     
 
     
-def randomNoising (discreteFunction: "DiscreteFunction", minAdd: int, maxAdd: int):
+def RandomNoising (discreteFunction: "DiscreteFunction", minAdd: int, maxAdd: int):
     import random
 
     for j in range(discreteFunction.height):
@@ -21,3 +21,11 @@ def randomNoising (discreteFunction: "DiscreteFunction", minAdd: int, maxAdd: in
             value = discreteFunction[i, j] + random.randint(int(minAdd), int(maxAdd))
 
             discreteFunction[i, j] = value
+
+def GaussianNoising(discreteFunction: "DiscreteFunction", sigma: float):
+    from Mathematics import GaussianDiscreteFunction
+
+    g = GaussianDiscreteFunction(sigma)
+
+    discreteFunction.kernel = discreteFunction.convolve(g).kernel
+

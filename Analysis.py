@@ -8,16 +8,20 @@ if TYPE_CHECKING:
 
 
 # --- Local ---
-def MSE(x: "DiscreteFunction", y: "DiscreteFunction"):
+def MSE(source: "DiscreteFunction", image: "DiscreteFunction"):
     result = 0
-    for i in range(x.width):
-        for j in range(x.height):
-            result += (x[i, j] - y[i, j])**2
+    for i in range(source.width):
+        for j in range(source.height):
+            result += (source[i, j] - image[i, j])**2
 
-    return result / (x.width * x.height)
+    return result / (source.width * source.height)
 
-def PSNR(x: "DiscreteFunction", y : "DiscreteFunction"):
-    mse = MSE(x, y)
+def PSNR(source: "DiscreteFunction", image: "DiscreteFunction"):
+    """
+    Basé sur le calcul direct de l’écart pixel par pixel de chaque image
+    """
+
+    mse = MSE(source, image)
 
     if mse == 0:
         return float("inf")
@@ -29,20 +33,22 @@ def PSNR(x: "DiscreteFunction", y : "DiscreteFunction"):
 # Quality
 def SSIM(x: DiscreteFunction, y: DiscreteFunction):
     """
-    Iterpretation for SSIM
+    Iterpretation for SSIM :
 
     - [0, 0.75] = Dégradation visible
     - [0.75, 0.95] = Correct
     - [0.95, 1] = Très bon
     - 1 = Identique
-    """
 
+    Description :
+    - le SSIM se concentre plus sur des caractéristiques globales de l’image en considérant les valeurs statistiques de celle-ci
+    """
 
     N = x.width * x.height
 
     # Moyennes
-    mu_x = x.getExpectation()
-    mu_y = y.getExpectation()
+    mu_x = x.Expectation()
+    mu_y = y.Expectation()
 
     # Variances et covariance
     var_x = 0
@@ -54,9 +60,9 @@ def SSIM(x: DiscreteFunction, y: DiscreteFunction):
             dx = x[i, j] - mu_x
             dy = y[i, j] - mu_y
 
-            var_x += dx**2
-            var_y += dy**2
-            cov_xy += dx*dy
+            var_x += dx * dx
+            var_y += dy * dy
+            cov_xy += dx * dy
 
     var_x /= N
     var_y /= N
@@ -74,13 +80,16 @@ def SSIM(x: DiscreteFunction, y: DiscreteFunction):
 # Flou
 def LaplacianVariance (x: DiscreteFunction):
     """
-    Interpretation
+    Interpretation :
     
-    Un résultat élevé indique de grandes variations dans l'image. 
+    > Un résultat élevé indique de grandes variations dans l'image. 
     Plus une image possède des contours, plus cette variation est grande. 
     Elle aura donc moins de chances d'être considérée comme floue.
 
-    si sup 215 => nette
+    Reactions :
+    - salt&pepper = très grande variation negative, "la nouvelle image est plus nette que l'ancienne"
+    - random noising = grande variation negative, "la nouvelle image est plus nette que l'ancienne"
+    - gaussian = baisse de la valeur
     """
 
     LAPLACIAN_KERNEL = DiscreteFunction([
@@ -95,13 +104,16 @@ def LaplacianVariance (x: DiscreteFunction):
 
 def SobelVariance (x: DiscreteFunction):
     """
-    Interpretation
+    Interpretation :
     
-    Un résultat élevé indique de grandes variations dans l'image. 
+    > Un résultat élevé indique de grandes variations dans l'image. 
     Plus une image possède des contours, plus cette variation est grande. 
     Elle aura donc moins de chances d'être considérée comme floue.
 
-    si sup a (1200, 2650, 80) => nette
+    Reactions :
+    - salt&pepper = variation negative, "la nouvelle image est plus nette que l'ancienne"
+    - random noising = variation negative, "la nouvelle image est plus nette que l'ancienne"
+    - gaussian = baisse de la valeur
     """
 
     X_KERNEL = DiscreteFunction([
@@ -230,15 +242,16 @@ def CumulativeHistogramCorrelation(x: DiscreteFunction):
 
     return numerator / denominator
 
-def SaltAndPepperDetection(x: DiscreteFunction):
+def SaltAndPepperDetection(x: DiscreteFunction, show_plot=False):
     hist = x.getHistorigram()
 
-    plt.figure()
-    plt.plot(range(0, 256), hist)
-    plt.plot(range(0, 256), [x.Expectation()]*256)
-    plt.plot(range(0, 256), [x.Expectation() + x.StandardDeviation()]*256)
-    plt.plot(range(0, 256), [x.Expectation() - x.StandardDeviation()]*256)
-    plt.show()
+    if show_plot:
+        plt.figure()
+        plt.plot(range(0, 256), hist)
+        plt.plot(range(0, 256), [x.Expectation()]*256)
+        plt.plot(range(0, 256), [x.Expectation() + x.StandardDeviation()]*256)
+        plt.plot(range(0, 256), [x.Expectation() - x.StandardDeviation()]*256)
+        plt.show()
 
     total = x.height * x.width
 
@@ -246,7 +259,13 @@ def SaltAndPepperDetection(x: DiscreteFunction):
     p_salt = hist[255] / total       # pixels blancs
     p_salt_and_pepper = p_pepper + p_salt   # probabilité globale
 
-    print(p_salt_and_pepper)
+    return p_salt_and_pepper
+
+
+
+
+
+
 
 ############## Anciens #####################
 
@@ -326,31 +345,46 @@ def EdgePreservation(before, after):
     """
     return GradientEnergy(after) / GradientEnergy(before)
 
-# --- Indicateurs d’etat --- #
-
-def QualityScore(function : "DiscreteFunction"):
-    from math import exp
-    return exp(GradientEnergy(function) / (LocalVariance(function) + 1e-6))/2
-
-def ChooseFilter(img):
-    var = LocalVariance(img)
-    grad = GradientEnergy(img)
-    #hf = HighFrequencyRatio(img)
-
-    if var > 500 and grad < 50:
-        return "gaussian"
-
-    if var > 1000: #and hf > 0.6:
-        return "median"
-
-    if grad > 200 and var > 800:
-        return "bilateral"
-
-    return "adaptive_gaussian"
 
 
 
 
-
-
+def PartialAnalysis(source: DiscreteFunction, image: DiscreteFunction):
+    """
+    Analyzes the image compared to the source and determines which filter to apply based on indicators.
+    
+    Returns a string indicating the recommended filter.
+    """
+    
+    # Compute PSNR to assess overall quality degradation
+    psnr = PSNR(source, image)
+    
+    if psnr > 40:  # High quality, minimal degradation
+        return "No filter needed"
+    
+    # Check for salt and pepper noise
+    p_sp = SaltAndPepperDetection(image)
+    if p_sp > 0.01:  # Significant salt and pepper noise detected
+        return "Median filter"
+    
+    # Check for blur: compare Laplacian variance
+    lap_source = LaplacianVariance(source)
+    lap_image = LaplacianVariance(image)
+    if lap_image < lap_source * 0.8:  # Image is significantly blurrier
+        return "Sharpening filter"  # Note: Sharpening may need implementation
+    
+    # Check for general noise: compare variances
+    var_source = source.Variance()
+    var_image = image.Variance()
+    if var_image > var_source * 1.2:  # Increased variance indicates noise
+        return "Bilateral filter"
+    
+    # Check for low contrast
+    rms_image = RMS(image)
+    if rms_image < 50:  # Low contrast detected
+        return "Histogram equalization"  # Note: May need implementation
+    
+    # Default case: assume Gaussian noise
+    return ""
+    
 

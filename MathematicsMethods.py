@@ -66,7 +66,6 @@ def DFT(kernel: list[list[float]]): # ATTENTION ne marche pas avec des non puiss
     
     return mat2
 
-
 def InverseFourierTransform(kernel:list[list[complex]], rayonMax: int = -1) -> list[list[float]]:
     mat: list[list] = []
     N = len(kernel[0]) * len(kernel)
@@ -187,7 +186,6 @@ def sectionnedFFT2Boost(kernel:list[list[float]], numberOfSections:int):
             finishedFFTKernel[n].append(results[k][n])
     
     return finishedFFTKernel
-
 
 def IFFT(data:list, completionMode:int, floatResult:bool=False, firstTime:bool=False) -> list[float]:
     if len(data)==1: 

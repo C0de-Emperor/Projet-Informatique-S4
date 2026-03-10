@@ -250,8 +250,8 @@ class ImageProcessingPanel:
         self.frame=ctk.CTkFrame(rightContainer)
         self.frame.pack(side="top", fill="x", pady=(5,0))
 
-        self.spatialFunctions={"Bruitage poivre et sel": (saltAndPaperNoising, "probability"),
-                                "Bruitage aléatoire": (randomNoising, "minAdd", "maxAdd"),
+        self.spatialFunctions={"Bruitage poivre et sel": (SaltAndPaperNoising, "probability"),
+                                "Bruitage aléatoire": (RandomNoising, "minAdd", "maxAdd"),
                                 "Filtre médian": (DiscreteFunction.medianFilter, "radius"),
                                 "Filtre adaptatif": (DiscreteFunctionAdaptativeFilter, "kernel size", "max diff"),
                                 "Filtre bilatéral": (DiscreteFunctionBilateralFilter, "kernel size", "variance de la normale")}
@@ -392,13 +392,13 @@ def importImageFromClipboard(event):
 def importNewImage():
     filepath=tk.filedialog.askopenfilename(title="Select File", filetypes=(("all files","*.*"),("png files","*.png"),("jpeg files","*.jpg")))
     if filepath=="": return
-    filename=os.path.basename(filepath)
+    filename:str = os.path.basename(filepath)
 
     try:
         image=Image.open(filepath)
     except UnidentifiedImageError as e:
-        #raise e
-        addErrorMessage(f"File format .{filename.split(".")[1]} not supported")
+        ext = filename.split(".")[1]
+        addErrorMessage(f"File format .{ext} not supported")
         return
 
     tab=TabFromImage(filename.split(".")[:-1], image)

@@ -23,7 +23,18 @@ from Mathematics import *
 #Tests.AnalysisRandomNoisingCurveVSGaussian("Pictures/Garden_strawberry.jpg", amplitude= 40, steps=60)
 
 f = DiscreteFunctionFromImage(r'Pictures\Garden_strawberry.jpg')
-Analysis.SaltAndPepperDetection(f)
-f.apply(Noising.saltAndPaperNoising, 0.2)
+source = f.copy()
+g = GaussianDiscreteFunction(2)
 
-Analysis.SaltAndPepperDetection(f)
+#h = f.convolve(g)
+#h.show()
+
+f.apply(Noising.GaussianNoising, 0.22)
+f.show()
+
+
+result = Analysis.PartialAnalysis(source, f)
+
+print(result)
+
+#print((a[0] - b[0], a[1] - b[1], a[2] - b[2]))

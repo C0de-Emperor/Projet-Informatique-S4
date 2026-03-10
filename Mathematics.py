@@ -1,7 +1,6 @@
 from math import log, sqrt
 from ImageMethods import *
 from MathematicsMethods import *
-from numpy import fft
 
 class DiscreteFunction:
     def __init__(self, kernel:list[list[float]], x:int = 0, y:int = 0):
@@ -99,7 +98,7 @@ class DiscreteFunction:
                     for n in range(other.height)
                 )
         return g
-    
+
     def adaptativeGaussianConvolution(self, other: "GaussianDiscreteFunction", diff: float):
         if not isinstance(other, GaussianDiscreteFunction):
             raise TypeError
@@ -253,7 +252,8 @@ class DiscreteFunction:
         return self
 
     def copy(self):
-        return DiscreteFunction(self.kernel.copy(), self.x, self.y)
+        import copy
+        return DiscreteFunction(copy.deepcopy(self.kernel), self.x, self.y)
 
     def show(self):
         image = getImageFromDiscreteFunction(self)
@@ -264,12 +264,54 @@ class DiscreteFunction:
 
         for i in range(self.width):
             for j in range(self.height):
-                if self[i,j] <= 0: histogram[0]+=1
-                elif self[i,j] >= 255: histogram[255]+=1
-                else: histogram[self[i,j]]+=1
+                value = int(round(self[i,j]))
+                if value <= 0: 
+                    histogram[0]+=1
+                elif value >= 255: 
+                    histogram[255]+=1
+                else: 
+                    histogram[value]+=1
 
         return histogram
+"""
+    def wienerDeconvolve(self, kernel: "DiscreteFunction", K: float = 0.01):
 
+        #Déconvolution de Wiener pour retirer un flou.
+
+        #kernel : noyau de convolution (PSF)
+        #K : paramètre de régularisation bruit/signal
+
+
+        from MathematicsMethods import FFT2Boost
+
+        # FFT de l'image floue
+        F = DiscreteFunction(FFT2Boost(self.kernel))
+
+        # FFT du noyau (mis à la taille de l'image)
+        #H = kernel.pad(self.width, self.height).fft2()
+
+        # Filtre de Wiener
+        for i in range(F.width):
+            for j in range(F.height):
+
+                h = H[i, j]
+
+                if abs(h) == 0:
+                    F[i, j] = 0
+                else:
+                    F[i, j] = F[i, j] * h.conjugate() / (abs(h)**2 + K)
+
+        # Retour domaine spatial
+        deconv = F.ifft2()
+
+        # Garder la partie réelle
+        deconv = deconv.real()
+
+        # Normalisation
+        deconv.resizeAmplitude(0, 255)
+
+        return deconv
+""" 
 
 class DiscreteFunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
