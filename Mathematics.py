@@ -345,6 +345,37 @@ class ComplexDiscreteFunction (DiscreteFunction):
     def __init__(self, kernel:list[list[complex]], x = 0, y = 0):
         super().__init__(kernel, x, y)
 
+    def __getitem__(self, item:tuple):
+        #item[0] = x
+        #item[1] = y
+        nItem=self.correctIndex(item)
+        
+        return self.kernel[nItem[1]][nItem[0]]
+    
+    def __setitem__(self, item:tuple, value: float):
+        #item[0] = x
+        #item[1] = y
+        nItem=self.correctIndex(item)
+
+        self.kernel[nItem[1]][nItem[0]] = value
+                
+    def correctIndex(self, item:tuple):
+        hWidth=self.width//2
+        hHeight=self.height//2
+
+        nItem = [item[0], item[1]]
+
+        if nItem[1] < hHeight:
+            if nItem[0] < hWidth:
+                return (nItem[0]+hWidth, nItem[1]+hHeight)
+            else:
+                return (nItem[0]-hWidth, nItem[1]+hHeight)
+        else:
+            if nItem[0] < hWidth:
+                return (nItem[0]+hWidth, nItem[1]-hHeight)
+            else:
+                return (nItem[0]-hWidth, nItem[1]-hHeight)
+
     def getModule(self, logarithmic:bool=True) -> DiscreteFunction:
         mat: list[list] = []
 
@@ -352,9 +383,9 @@ class ComplexDiscreteFunction (DiscreteFunction):
             mat.append([])
             for i in range(self.width):
                 if logarithmic: 
-                    print(i,j)
-                    if self[i,j] != 0+0j: mat[j].append(log(abs(self[i,j]), 10))
-                    else: mat[j].append(float("-inf"))
+                    mat[j].append(log(1+abs(self[i,j]), 10))
+                    """if self[i,j] != 0+0j: mat[j].append(log(abs(self[i,j]), 10))
+                    else: mat[j].append(float("-inf"))"""
                 else: mat[j].append(abs(self[i,j]))
         
         return DiscreteFunction(mat, 0, 0)
@@ -378,19 +409,32 @@ class ComplexDiscreteFunction (DiscreteFunction):
         im.show()
     
     def RadiusFilter(self, radiusFraction:float):
-        radius=max(self.height, self.width)*radiusFraction/2*sqrt(2)
+        radius=max(self.height, self.width)*radiusFraction/2
+
+        hWidth=self.width/2
+        hHeight=self.height/2
+
         for i in range(self.width):
             for j in range(self.height):
-                distances=[radius > sqrt((i-x)**2+(j-y)**2) for (x,y) in [(0,0), (0, self.height), (self.width, 0), (self.width, self.height)]]
-                if sum(distances) == 0:
+                if sqrt((i-hWidth)**2+(j-hHeight)**2) > radius:
                     self[i,j]=0
-    
-    def AmplitudeCutFilter(self, maxValueFraction):
-        maxValue=abs(self[self.width//2, self.height//2])*maxValueFraction
+  
+    def AmplitudeCutFilter(self, maxValueFraction, immunityRadius, logarithmic=True):
+        if logarithmic: maxValue=log(1+abs(self[self.width//2, self.height//2]))*maxValueFraction
+        else: maxValue=abs(self[self.width//2, self.height//2])*maxValueFraction
+
+        hWidth=self.width/2
+        hHeight=self.height/2
+
         for i in range(self.width):
             for j in range(self.height):
-                if abs(self[i,j]) <= maxValue:
-                    self[i,j]=0
+                if sqrt((i-hWidth)**2+(j-hHeight)**2) > immunityRadius:
+                    if logarithmic:
+                        if log(1+abs(self[i,j])) > maxValue:
+                            self[i,j]=0
+                    elif abs(self[i,j]) > maxValue:
+                        self[i,j]=0
+                
     
     def getRevolve(self):
         mat : list[list] = []

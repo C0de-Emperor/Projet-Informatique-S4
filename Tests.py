@@ -306,3 +306,4 @@ def SectionnedMultiprocessedFFT2Test(imageSize, start, end, step):
     plt.ylabel("time taken to compute the FFT")
 
     plt.show()
+
