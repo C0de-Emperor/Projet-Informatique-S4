@@ -307,3 +307,31 @@ def SectionnedMultiprocessedFFT2Test(imageSize, start, end, step):
 
     plt.show()
 
+from random import randint
+
+
+w=5
+
+a=DiscreteFunctionFromImage("Pictures/superman.png")
+b=DiscreteFunction([[(abs(i-(256-j))<=1)*((a.width//2-w<i<a.width//2+w)*(a.height//-w<j<a.height//2+w)) for i in range(a.width)] for j in range(a.height)])
+b=DiscreteFunction([[(i==128)*(j==128) for i in range(256)] for j in range(256)])
+b.resizeAmplitude()
+#b.normalize()
+
+#b.show()
+
+#c=a.convolve(b)
+#c.show()
+
+af=ComplexDiscreteFunction(fft.fft2(a.kernel))
+bf=ComplexDiscreteFunction(fft.fft2(b.kernel))
+
+af.show()
+bf.show()
+
+cf=af*bf
+c=DiscreteFunction(fft.ifft2(cf.kernel))
+c.resizeAmplitude()
+
+#cf.show()
+c.show()
