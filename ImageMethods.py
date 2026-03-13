@@ -10,12 +10,18 @@ def getKernelFromImage(image:Image.Image, coeffs:tuple=(0.299, 0.587, 0.114)) ->
         # coeffs[0], coeffs[1], coeffs[3] sont les coefficients de la combinaison lineaire respectivement de rouge, vert et bleu
 
         imageKernel = []
-
-        for j in range(image.height):
-            imageKernel.append([])
-            for i in range(image.width):
-                pixelColors = image.getpixel((i,j))
-                imageKernel[j].append(round(sum([coeffs[k]*pixelColors[k] for k in range(3)])))
+        if type(image.getpixel((0,0)))==int:
+            for j in range(image.height):
+                imageKernel.append([])
+                for i in range(image.width):
+                    pixelColors = image.getpixel((i,j))
+                    imageKernel[j].append(pixelColors)
+        else:
+            for j in range(image.height):
+                imageKernel.append([])
+                for i in range(image.width):
+                    pixelColors = image.getpixel((i,j))
+                    imageKernel[j].append(round(sum([coeffs[k]*pixelColors[k] for k in range(3)])))
 
         return imageKernel
 
