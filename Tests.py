@@ -310,27 +310,44 @@ def SectionnedMultiprocessedFFT2Test(imageSize, start, end, step):
 from random import randint
 
 
-w=5
+w=10
 
-a=DiscreteFunctionFromImage("Pictures/superman.png")
-b=DiscreteFunction([[(abs(i-(256-j))<=1)*((a.width//2-w<i<a.width//2+w)*(a.height//-w<j<a.height//2+w)) for i in range(a.width)] for j in range(a.height)])
-b=DiscreteFunction([[(i==128)*(j==128) for i in range(256)] for j in range(256)])
-b.resizeAmplitude()
-#b.normalize()
+a=DiscreteFunctionFromImage("Pictures/petites_fraises.png")
+b=DiscreteFunction([[(abs(i-(32-j))<=0)*(10<i<22)*(10<j<22) for i in range(32)] for j in range(32)])
+#b=DiscreteFunction([[(abs(i-(256-j))<=1)*((a.width//2-w<i<a.width//2+w)*(a.height//-w<j<a.height//2+w)) for i in range(a.width)] for j in range(a.height)])
+#b=DiscreteFunction([[(i==128)*(j==128) for i in range(256)] for j in range(256)])
 
+#b.resizeAmplitude()
 #b.show()
 
-#c=a.convolve(b)
-#c.show()
+b.normalize()
 
-af=ComplexDiscreteFunction(fft.fft2(a.kernel))
-bf=ComplexDiscreteFunction(fft.fft2(b.kernel))
+startTime=time.time()
 
-af.show()
-bf.show()
+c=a.convolve(b)
+print("--------", time.time()-startTime)
+c.show()
+
+b=b.getCentered()
+
+#b.resizeAmplitude()
+#b.show()
+
+b.normalize()
+
+startTime=time.time()
+
+af=ComplexDiscreteFunction(FFT2(a.kernel))
+bf=ComplexDiscreteFunction(FFT2(b.kernel))
+
+#af.show()
+#bf.show()
 
 cf=af*bf
-c=DiscreteFunction(fft.ifft2(cf.kernel))
+c=DiscreteFunction(IFFT2(cf.kernel))
+
+print("--------", time.time()-startTime)
+
 c.resizeAmplitude()
 
 #cf.show()

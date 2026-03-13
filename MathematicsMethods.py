@@ -238,3 +238,20 @@ def getEcartRel(ref:list, test:list) -> float:
         except: 
             ecartMoy+=getEcartRel(ref[k], test[k])
     return float(ecartMoy)/len(ref)
+
+def fftShiftIndex(width, height, item:tuple):
+    hWidth=width//2
+    hHeight=height//2
+
+    nItem = [item[0], item[1]]
+
+    if nItem[1] <= hHeight:
+        if nItem[0] <= hWidth:
+            return (nItem[0]+hWidth, nItem[1]+hHeight)
+        else:
+            return (nItem[0]-hWidth, nItem[1]+hHeight)
+    else:
+        if nItem[0] <= hWidth:
+            return (nItem[0]+hWidth, nItem[1]-hHeight)
+        else:
+            return (nItem[0]-hWidth, nItem[1]-hHeight)

@@ -275,6 +275,26 @@ class DiscreteFunction:
                     histogram[value]+=1
 
         return histogram
+
+    def getCentered(self):
+        kernel=self.kernel.copy()
+
+        if self.width%2==1:
+            for j in range(self.height):
+                kernel[j].append(0)
+        if self.height%2==1:
+            kernel.append([0 for k in range(self.width)])
+        
+        newDF=DiscreteFunction(kernel)
+        
+        mat=[[0 for i in range(newDF.width)] for j in range(newDF.height)]
+        for i in range(newDF.width):
+            for j in range(newDF.height):
+                mat[j][i]=newDF[fftShiftIndex(newDF.width, newDF.height, (i,j))]
+
+        return DiscreteFunction(mat)
+
+
 """
     def wienerDeconvolve(self, kernel: "DiscreteFunction", K: float = 0.01):
 
@@ -365,23 +385,6 @@ class ComplexDiscreteFunction (DiscreteFunction):
             return ComplexDiscreteFunction(mat)
         else:
             raise TypeError(f"unsupported operand type(s) for '*' : 'DiscreteFunction' and '{ type(value).__name__}'")
-                
-    def correctIndex(self, item:tuple):
-        hWidth=self.width//2
-        hHeight=self.height//2
-
-        nItem = [item[0], item[1]]
-
-        if nItem[1] < hHeight:
-            if nItem[0] < hWidth:
-                return (nItem[0]+hWidth, nItem[1]+hHeight)
-            else:
-                return (nItem[0]-hWidth, nItem[1]+hHeight)
-        else:
-            if nItem[0] < hWidth:
-                return (nItem[0]+hWidth, nItem[1]-hHeight)
-            else:
-                return (nItem[0]-hWidth, nItem[1]-hHeight)
 
     def getModule(self, logarithmic:bool=True) -> DiscreteFunction:
         mat: list[list] = []
