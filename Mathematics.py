@@ -91,6 +91,7 @@ class DiscreteFunction:
             y=self.y
         )
         for i in range(self.width):
+            print((i+1)*100//self.width, "%")
             for j in range(self.height):
                 g[i, j] = sum(
                     self[i - m, j - n] * other[m, n]
@@ -202,9 +203,10 @@ class DiscreteFunction:
                 if self[i,j]>maxV: maxV=self[i,j]
                 if self[i,j]<minV and self[i,j]!=float("-inf"): minV=self[i,j]
 
-        for i in range(self.width):
-            for j in range(self.height):
-                self[i,j]=(self[i,j]-minV)*(maxValue-minValue)/(maxV-minV)+minValue
+        if maxV!=minV:
+            for i in range(self.width):
+                for j in range(self.height):
+                    self[i,j]=(self[i,j]-minV)*(maxValue-minValue)/(maxV-minV)+minValue
     
     def medianFilter(self, radius: int = 1):
         newKernel = [[0]*self.width for _ in range(self.height)]
@@ -273,6 +275,26 @@ class DiscreteFunction:
                     histogram[value]+=1
 
         return histogram
+
+    def getCentered(self):
+        kernel=self.kernel.copy()
+
+        if self.width%2==1:
+            for j in range(self.height):
+                kernel[j].append(0)
+        if self.height%2==1:
+            kernel.append([0 for k in range(self.width)])
+        
+        newDF=DiscreteFunction(kernel)
+        
+        mat=[[0 for i in range(newDF.width)] for j in range(newDF.height)]
+        for i in range(newDF.width):
+            for j in range(newDF.height):
+                mat[j][i]=newDF[fftShiftIndex(newDF.width, newDF.height, (i,j))]
+
+        return DiscreteFunction(mat)
+
+
 """
     def wienerDeconvolve(self, kernel: "DiscreteFunction", K: float = 0.01):
 
@@ -344,37 +366,47 @@ class GaussianDiscreteFunction (DiscreteFunction):
 class ComplexDiscreteFunction (DiscreteFunction):
     def __init__(self, kernel:list[list[complex]], x = 0, y = 0):
         super().__init__(kernel, x, y)
-
-    def __getitem__(self, item:tuple):
-        #item[0] = x
-        #item[1] = y
-        nItem=self.correctIndex(item)
-        
-        return self.kernel[nItem[1]][nItem[0]]
     
-    def __setitem__(self, item:tuple, value: float):
-        #item[0] = x
-        #item[1] = y
-        nItem=self.correctIndex(item)
+    def __mul__(self, value):
+        if type(value) == float or type(value) == int:
+            return ComplexDiscreteFunction([[self[i, j] * value for i in range(self.width)] for j in range(self.height)], x=self.x, y=self.y)
+        elif type(value) == ComplexDiscreteFunction:
+            
+            mat=[]
+            for j in range(self.height):
+                mat.append([])
+                for i in range(self.width):
+                    if i < value.width and j < value.height:
+                        mat[j].append(self[i,j]*value[i,j])
+                    else:
+                        mat[j].append(0)
+            
 
-        self.kernel[nItem[1]][nItem[0]] = value
-                
-    def correctIndex(self, item:tuple):
-        hWidth=self.width//2
-        hHeight=self.height//2
-
-        nItem = [item[0], item[1]]
-
-        if nItem[1] < hHeight:
-            if nItem[0] < hWidth:
-                return (nItem[0]+hWidth, nItem[1]+hHeight)
-            else:
-                return (nItem[0]-hWidth, nItem[1]+hHeight)
+            return ComplexDiscreteFunction(mat)
         else:
-            if nItem[0] < hWidth:
-                return (nItem[0]+hWidth, nItem[1]-hHeight)
-            else:
-                return (nItem[0]-hWidth, nItem[1]-hHeight)
+            raise TypeError(f"unsupported operand type(s) for '*' : 'DiscreteFunction' and '{ type(value).__name__}'")
+    
+    def __truediv__(self, value):
+        if type(value) == float or type(value) == int:
+            return ComplexDiscreteFunction([[self[i, j] / value for i in range(self.width)] for j in range(self.height)], x=self.x, y=self.y)
+        elif type(value) == ComplexDiscreteFunction:
+            
+            mat=[]
+            for j in range(self.height):
+                mat.append([])
+                for i in range(self.width):
+                    if i < value.width and j < value.height:
+                        if value[i,j]!=0:
+                            mat[j].append(self[i,j]/value[i,j])
+                        else:
+                            mat[j].append(0)
+                    else:
+                        mat[j].append(0)
+            
+
+            return ComplexDiscreteFunction(mat)
+        else:
+            raise TypeError(f"unsupported operand type(s) for '*' : 'DiscreteFunction' and '{ type(value).__name__}'")
 
     def getModule(self, logarithmic:bool=True) -> DiscreteFunction:
         mat: list[list] = []
@@ -435,8 +467,6 @@ class ComplexDiscreteFunction (DiscreteFunction):
                     elif abs(self[i,j]) > maxValue:
                         self[i,j]=0
                 
-    
-    def getRevolve(self):
         mat : list[list] = []
 
         for j in range(self.height*2):

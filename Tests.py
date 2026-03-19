@@ -307,3 +307,65 @@ def SectionnedMultiprocessedFFT2Test(imageSize, start, end, step):
 
     plt.show()
 
+def ConvolutionDeconvolutionTest():
+    w=10
+    
+    a=DiscreteFunctionFromImage("Pictures/superman.png")
+    #b=DiscreteFunction([[(abs(i-(32-j))<=0)*(10<i<22)*(10<j<22) for i in range(85)] for j in range(85)])
+    #b=DiscreteFunction([[(abs(i-(a.height-j))<=1)*((a.width//2-w<i<a.width//2+w)*(a.height//-w<j<a.height//2+w)) for i in range(a.width)] for j in range(a.height)])
+    #b=DiscreteFunction([[(i==128)*(j==128) for i in range(256)] for j in range(256)])
+    b=GaussianDiscreteFunction(3)
+    bk=b.kernel
+    for j in range(b.height):
+        for k in range((-b.width-1+a.width)//2):
+            bk[j].insert(0, 0)
+            bk[j].append(0)
+    for k in range((-b.height-1+a.height)//2):
+        bk.insert(0, [0 for j in range(len(bk[0]))])
+        bk.append([0 for j in range(len(bk[0]))])
+    for j in range(len(bk)):
+        bk[j].append(0)
+    bk.append([0 for j in range(len(bk[0]))])
+    
+    b=DiscreteFunction(bk)
+    
+    b.resizeAmplitude()
+    b.show()
+    
+    b.normalize()
+    
+    startTime=time.time()
+    
+    #c=a.convolve(b)
+    print("--------", time.time()-startTime)
+    #c.show()
+    
+    b=b.getCentered()
+    
+    #b.resizeAmplitude()
+    #b.show()
+    
+    b.normalize()
+    
+    startTime=time.time()
+    
+    af=ComplexDiscreteFunction(FFT2(a.kernel))
+    bf=ComplexDiscreteFunction(FFT2(b.kernel))
+    
+    #af.show()
+    #bf.show()
+    
+    cf=af*bf
+    c=DiscreteFunction(IFFT2(cf.kernel))
+    
+    print("--------", time.time()-startTime)
+    
+    c.resizeAmplitude()
+    
+    #cf.show()
+    c.show()
+    
+    df=cf/bf
+    d=DiscreteFunction(IFFT2(df.kernel))
+    d.resizeAmplitude()
+    d.show()
