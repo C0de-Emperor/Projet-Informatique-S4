@@ -385,6 +385,28 @@ class ComplexDiscreteFunction (DiscreteFunction):
             return ComplexDiscreteFunction(mat)
         else:
             raise TypeError(f"unsupported operand type(s) for '*' : 'DiscreteFunction' and '{ type(value).__name__}'")
+    
+    def __truediv__(self, value):
+        if type(value) == float or type(value) == int:
+            return ComplexDiscreteFunction([[self[i, j] / value for i in range(self.width)] for j in range(self.height)], x=self.x, y=self.y)
+        elif type(value) == ComplexDiscreteFunction:
+            
+            mat=[]
+            for j in range(self.height):
+                mat.append([])
+                for i in range(self.width):
+                    if i < value.width and j < value.height:
+                        if value[i,j]!=0:
+                            mat[j].append(self[i,j]/value[i,j])
+                        else:
+                            mat[j].append(0)
+                    else:
+                        mat[j].append(0)
+            
+
+            return ComplexDiscreteFunction(mat)
+        else:
+            raise TypeError(f"unsupported operand type(s) for '*' : 'DiscreteFunction' and '{ type(value).__name__}'")
 
     def getModule(self, logarithmic:bool=True) -> DiscreteFunction:
         mat: list[list] = []
