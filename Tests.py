@@ -369,3 +369,15 @@ def ConvolutionDeconvolutionTest():
     d=DiscreteFunction(IFFT2(df.kernel))
     d.resizeAmplitude()
     d.show()
+
+
+def test_couleur(path):
+    image = ColorDiscreteFunctionFromImage(path)
+    image.show()
+
+    f = GaussianDiscreteFunction(5, 1)
+    d = 30.0
+    #image.apply_to_all("adaptativeGaussianConvolution", f, d)
+    image.apply_to_all("medianFilter",3)
+
+    image.show()

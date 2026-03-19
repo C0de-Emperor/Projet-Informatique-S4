@@ -79,4 +79,29 @@ def loadDiscreteFunction(filename:str):
             kernel[j].append(complex(mat[j][i]))
     
     return DiscreteFunction(kernel, x, y)
-    
+
+
+def getRGBKernelsFromImage(image):
+    image = image.convert("RGB")
+    red_kernel, green_kernel, blue_kernel = [], [], []
+    for j in range(image.height):
+        red_kernel.append([])
+        green_kernel.append([])
+        blue_kernel.append([])
+        for i in range(image.width):
+            r, g, b = image.getpixel((i, j))
+            red_kernel[j].append(r)
+            green_kernel[j].append(g)
+            blue_kernel[j].append(b)
+    return red_kernel, green_kernel, blue_kernel
+
+def getImageFromRGBFunctions(red_function, green_function, blue_function):
+    image = Image.new("RGB", (red_function.width, red_function.height))
+    for i in range(red_function.width):
+        for j in range(red_function.height):
+            r = max(0, min(255, int(abs(red_function[i, j]))))
+            g = max(0, min(255, int(abs(green_function[i, j]))))
+            b = max(0, min(255, int(abs(blue_function[i, j]))))
+            image.putpixel((i, j), (r, g, b))
+    return image
+
