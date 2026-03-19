@@ -4,6 +4,7 @@ from Noising import *
 from Analysis import *
 from numpy import fft, linspace
 from matplotlib import pyplot as plt
+from math import ceil
 import time
 import os
 
@@ -307,68 +308,41 @@ def SectionnedMultiprocessedFFT2Test(imageSize, start, end, step):
 
     plt.show()
 
-def ConvolutionDeconvolutionTest():
-    w=10
-    
-    a=DiscreteFunctionFromImage("Pictures/superman.png")
-    #b=DiscreteFunction([[(abs(i-(32-j))<=0)*(10<i<22)*(10<j<22) for i in range(85)] for j in range(85)])
+def TrueConvolutionTest(discreteFunction:DiscreteFunction, kernel:DiscreteFunction, convoTest=False):
+    a=discreteFunction
+    b=kernel
+
+    #w=10
     #b=DiscreteFunction([[(abs(i-(a.height-j))<=1)*((a.width//2-w<i<a.width//2+w)*(a.height//-w<j<a.height//2+w)) for i in range(a.width)] for j in range(a.height)])
-    #b=DiscreteFunction([[(i==128)*(j==128) for i in range(256)] for j in range(256)])
-    b=GaussianDiscreteFunction(3)
-    bk=b.kernel
-    for j in range(b.height):
-        for k in range((-b.width-1+a.width)//2):
-            bk[j].insert(0, 0)
-            bk[j].append(0)
-    for k in range((-b.height-1+a.height)//2):
-        bk.insert(0, [0 for j in range(len(bk[0]))])
-        bk.append([0 for j in range(len(bk[0]))])
-    for j in range(len(bk)):
-        bk[j].append(0)
-    bk.append([0 for j in range(len(bk[0]))])
     
-    b=DiscreteFunction(bk)
-    
-    b.resizeAmplitude()
-    b.show()
-    
-    b.normalize()
-    
+
+    if convoTest:
+        startTime=time.time()
+        d=a.convolve(b)
+        d.show()
+        print("convolution:", time.time()-startTime)
+
     startTime=time.time()
-    
-    #c=a.convolve(b)
-    print("--------", time.time()-startTime)
-    #c.show()
-    
-    b=b.getCentered()
-    
-    #b.resizeAmplitude()
-    #b.show()
-    
-    b.normalize()
-    
-    startTime=time.time()
-    
-    af=ComplexDiscreteFunction(FFT2(a.kernel))
-    bf=ComplexDiscreteFunction(FFT2(b.kernel))
-    
-    #af.show()
-    #bf.show()
-    
-    cf=af*bf
+    (a2, coordinates)=a.extend((2**ceil(log(a.width,2)), 2**ceil(log(a.height,2))))
+
+    (b2,raf)=b.extend((a2.width, a2.height))
+    b2=b2.getCentered()
+    #b2.normalize()
+
+    af=ComplexDiscreteFunction(FFT2(a2.kernel))
+    b2f=ComplexDiscreteFunction(FFT2(b2.kernel))
+
+    cf=af*b2f
+
     c=DiscreteFunction(IFFT2(cf.kernel))
-    
-    print("--------", time.time()-startTime)
-    
-    c.resizeAmplitude()
-    
-    #cf.show()
+    c.resize(coordinates=coordinates)
     c.show()
-    
-    df=cf/bf
-    d=DiscreteFunction(IFFT2(df.kernel))
-    d.resizeAmplitude()
-    d.show()
+    print("frequency multiplication:", time.time()-startTime)
+
+    ef=cf/b2f
+    e=DiscreteFunction(IFFT2(ef.kernel))
+    e.resize(coordinates=coordinates)
+    e.show()
 
 
 def test_couleur(path):
@@ -381,3 +355,4 @@ def test_couleur(path):
     image.apply_to_all("medianFilter",3)
 
     image.show()
+
