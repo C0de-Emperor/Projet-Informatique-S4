@@ -294,6 +294,115 @@ class DiscreteFunction:
 
         return DiscreteFunction(mat)
 
+    def extend(self, newSize):
+        kernel=self.kernel.copy()
+
+        if self.width%2==0:
+            if newSize[0]%2==0:
+                a=(newSize[0]-len(kernel[0]))//2
+                x=a
+
+                for j in range(len(kernel)):
+                    for k in range(a):
+                        kernel[j].append(0)
+                        kernel[j].insert(0, 0)
+            else:
+                a=(newSize[0]-len(kernel[0])-1)//2
+                x=a
+                b=newSize[0]-2
+
+                for j in range(len(kernel)):
+                    for k in range(a):
+                        kernel[j].append(0)
+                        kernel[j].insert(0, 0)
+                    for k in range(b, 2, -1):
+                        kernel[j][k]=(kernel[j][k]+kernel[j][k-1])/2
+                    kernel[j].append(0)
+        else:
+            if newSize[0]%2==1:
+                a=(newSize[0]-len(kernel[0])+1)//2
+                x=a
+
+                for j in range(len(kernel)):
+                    for k in range(a):
+                        kernel[j].append(0)
+                        kernel[j].insert(0, 0)
+            else:
+                a=(newSize[0]-len(kernel[0])-1)//2
+                x=a
+                b=newSize[0]-2
+
+                for j in range(len(kernel)):
+                    for k in range(a):
+                        kernel[j].append(0)
+                        kernel[j].insert(0, 0)
+                    for k in range(b, 2, -1):
+                        kernel[j][k]=(kernel[j][k]+kernel[j][k-1])/2
+                    kernel[j].append(0)
+
+        if self.height%2==0:
+            if newSize[1]%2==0:
+                a=(newSize[1]-len(kernel))//2
+                y=a
+
+                for k in range(a):
+                    kernel.append([0 for j in range(len(kernel[0]))])
+                    kernel.insert(0, [0 for j in range(len(kernel[0]))])
+            else:
+                a=(newSize[1]-len(kernel)-1)//2
+                y=a
+                b=newSize[1]-2
+
+                for k in range(a):
+                    kernel.append([0 for j in range(len(kernel[0]))])
+                    kernel.insert(0, [0 for j in range(len(kernel[0]))])
+                for k in range(b, 2, -1):
+                    for j in range(len(kernel[0])):
+                        kernel[k][j]=(kernel[k][j]+kernel[k-1][j])/2
+                kernel.append([0 for j in range(len(kernel[0]))])
+        else:
+            if newSize[1]%2==1:
+                a=(newSize[1]-len(kernel)+1)//2
+                y=a
+
+                for k in range(a):
+                    kernel.append([0 for j in range(len(kernel[0]))])
+                    kernel.insert(0, [0 for j in range(len(kernel[0]))])
+            else:
+                a=(newSize[1]-len(kernel)-1)//2
+                y=a
+                b=newSize[1]-2
+
+                for k in range(a):
+                    kernel.append([0 for j in range(len(kernel[0]))])
+                    kernel.insert(0, [0 for j in range(len(kernel[0]))])
+                for k in range(b, 2, -1):
+                    for j in range(len(kernel[0])):
+                        kernel[k][j]=(kernel[k][j]+kernel[k-1][j])/2
+                kernel.append([0 for j in range(len(kernel[0]))])
+
+        coordinates=(x,y,self.width,self.height)
+        return DiscreteFunction(kernel), coordinates
+
+    def resize(self, x=0, y=0, width=0, height=0, coordinates=None):
+        if coordinates:
+            x,y,width,height=coordinates[0], coordinates[1], coordinates[2], coordinates[3]
+
+        for k in range(self.height):
+            for j in range(x):
+                self.kernel[k].pop(0)
+        for k in range(y):
+            self.kernel.pop(0)
+        
+        for k in range(self.height):
+            for j in range(len(self.kernel[0])-width):
+                self.kernel[j].pop()
+        for k in range(len(self.kernel)-height):
+            self.kernel.pop()
+        
+        self.width=width
+        self.height=height
+
 
 """
     def wienerDeconvolve(self, kernel: "DiscreteFunction", K: float = 0.01):
