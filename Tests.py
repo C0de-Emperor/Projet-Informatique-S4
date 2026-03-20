@@ -356,3 +356,73 @@ def test_couleur(path):
 
     image.show()
 
+def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
+    a=discreteFunction
+    (a2, coordinates)=a.extend((2**ceil(log(a.width,2)), 2**ceil(log(a.height,2))))
+
+    from random import random
+    sigma=round(random()*2+1, 4)
+    print("SIGMA:", sigma)
+
+    b=GaussianDiscreteFunction(sigma)
+    (b2,raf)=b.extend((a2.width, a2.height))
+    b2=b2.getCentered()
+    #b2.normalize()
+
+    af=ComplexDiscreteFunction(FFT2(a2.kernel)) 
+    b2f=ComplexDiscreteFunction(FFT2(b2.kernel))
+    cf=af*b2f
+
+    canva=Image.new("RGB", (a.width*5, a.height*4))
+
+    x=[k/10 for k in range(10,30)]
+    y={"yGradientEnergy":[],
+       "yLocalVariance":[],
+       "yEdgePreservation":[],
+       "yHistogramSpread":[],
+       "yRMS":[],
+       "ySobelVariance":[],
+       "yLaplacianVariance":[],
+       "ySSIM":[],
+       "yPSNR":[],
+       "yMSE":[]}
+
+    for k in range(10,30):
+        d=GaussianDiscreteFunction(k/10)
+        (d,raf)=d.extend((a2.width, a2.height))
+        d2=d.getCentered()
+        d2f=ComplexDiscreteFunction(FFT2(d2.kernel))
+
+        ef=cf/d2f
+        e=DiscreteFunction(IFFT2(ef.kernel))
+        e.resize(coordinates=coordinates)
+
+        eIm=getImageFromDiscreteFunction(e)
+        canva.paste(eIm, ((((k-10)%5)*a.width),((k-10)//5)*a.height))
+        #eIm.save("__pycache__/"+str(k/10)+".png")
+
+
+        y["yEdgePreservation"]=EdgePreservation(a, e)
+        y["yGradientEnergy"]=GradientEnergy(e)
+        y["yHistogramSpread"]=HistogramSpread(e)
+        y["yLaplacianVariance"]=LaplacianVariance(e)
+        y["yLocalVariance"]=LocalVariance(e)
+        y["yMSE"]=MSE(a, e)
+        y["yPSNR"]=PSNR(a, e)
+        y["yRMS"]=RMS(e)
+        y["ySobelVariance"]=SobelVariance(e)
+        y["ySSIM"]=SSIM(a, e)
+
+        print("---------", (k-9)/(20)*100, "%")
+
+    for k in range(len(y.keys())):
+        plt.subplot(4, 3, k+1)
+        plt.plot(x, y[y.keys()[k]], "o-")
+        plt.title(y.keys()[k])
+    
+    plt.show()
+
+    canva.show()
+    canva.save("__pycache__/canva.png")
+
+TestMultiplesDeconvo(DiscreteFunctionFromImage("Pictures/superman.png"))

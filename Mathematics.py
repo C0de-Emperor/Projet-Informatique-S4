@@ -545,6 +545,7 @@ class ComplexDiscreteFunction (DiscreteFunction):
         #mat=ComplexDiscreteFunction(self.getRevolve().kernel)
         mat=self.getModule()
         mat.resizeAmplitude()
+        mat=mat.getCentered()
 
         im=getImageFromDiscreteFunction(mat)
         im.show()
