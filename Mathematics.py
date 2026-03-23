@@ -545,6 +545,7 @@ class ComplexDiscreteFunction (DiscreteFunction):
         #mat=ComplexDiscreteFunction(self.getRevolve().kernel)
         mat=self.getModule()
         mat.resizeAmplitude()
+        mat=mat.getCentered()
 
         im=getImageFromDiscreteFunction(mat)
         im.show()
@@ -597,3 +598,45 @@ class ComplexDiscreteFunction (DiscreteFunction):
 
 class DiscreteConvertionError(Exception):
     pass
+
+
+
+class ColorDiscreteFunction:
+    def __init__(self, red_kernel, green_kernel, blue_kernel,x:int = 0, y:int = 0):
+        self.R = red_kernel
+        self.G = green_kernel
+        self.B = blue_kernel
+        self.width = red_kernel.width
+        self.height = red_kernel.height
+        self.x = x
+        self.y = y
+
+    def apply_to_all(self, func_name: str, *args, **kwargs):
+        self.R = getattr(self.R, func_name)(*args, **kwargs)
+        self.G = getattr(self.G, func_name)(*args, **kwargs)
+        self.B = getattr(self.B, func_name)(*args, **kwargs)
+        return self
+
+    def show(self):
+        image = getImageFromRGBFunctions(self.R, self.G, self.B)
+        image.show()
+
+    def save(self, filename: str):
+        image = getImageFromRGBFunctions(self.R, self.G, self.B)
+        image.save(filename)
+
+class ColorDiscreteFunctionFromImage(ColorDiscreteFunction):
+    def __init__(self, path: str, x: int = 0, y: int = 0):
+        import os
+        if not os.path.exists(path):
+            raise DiscreteConvertionError(f"unknown access path : '{path}'")
+        self.path = path
+
+        red_kernel, green_kernel, blue_kernel = getRGBKernelsFromImage(Image.open(self.path))
+
+        self.red_function = DiscreteFunction(red_kernel, x, y)
+        self.green_function = DiscreteFunction(green_kernel, x, y)
+        self.blue_function = DiscreteFunction(blue_kernel, x, y)
+
+        super().__init__(self.red_function, self.green_function, self.blue_function, x, y)
+

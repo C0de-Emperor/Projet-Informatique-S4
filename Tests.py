@@ -361,6 +361,7 @@ def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
 
     from random import random
     sigma=round(random()*2+1, 4)
+    print("SIGMA:", sigma)
 
     b=GaussianDiscreteFunction(sigma)
     (b2,raf)=b.extend((a2.width, a2.height))
@@ -400,23 +401,25 @@ def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
         #eIm.save("__pycache__/"+str(k/10)+".png")
 
 
-        y["yEdgePreservation"].append(EdgePreservation(a, e))
-        y["yGradientEnergy"].append(GradientEnergy(e))
-        y["yHistogramSpread"].append(HistogramSpread(e))
-        y["yLaplacianVariance"].append(LaplacianVariance(e))
-        y["yLocalVariance"].append(LocalVariance(e))
-        y["yMSE"].append(MSE(a, e))
-        y["yPSNR"].append(PSNR(a, e))
-        y["yRMS"].append(RMS(e))
-        y["ySobelVariance"].append(SobelVariance(e))
-        y["ySSIM"].append(SSIM(a, e))
+        y["yEdgePreservation"]=EdgePreservation(a, e)
+        y["yGradientEnergy"]=GradientEnergy(e)
+        y["yHistogramSpread"]=HistogramSpread(e)
+        y["yLaplacianVariance"]=LaplacianVariance(e)
+        y["yLocalVariance"]=LocalVariance(e)
+        y["yMSE"]=MSE(a, e)
+        y["yPSNR"]=PSNR(a, e)
+        y["yRMS"]=RMS(e)
+        y["ySobelVariance"]=SobelVariance(e)
+        y["ySSIM"]=SSIM(a, e)
 
         print("---------", (k-9)/(20)*100, "%")
 
     for k in range(len(y.keys())):
         plt.subplot(4, 3, k+1)
-        plt.plot(x, y[list(y.keys())[k]], "o-")
-        plt.title(list(y.keys())[k])
+        plt.plot(x, y[y.keys()[k]], "o-")
+        plt.title(y.keys()[k])
+    
+    plt.show()
 
     canva.show()
     canva.save("__pycache__/canva.png")

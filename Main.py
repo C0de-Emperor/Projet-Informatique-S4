@@ -38,3 +38,6 @@ result = Analysis.PartialAnalysis(source, f)
 print(result)
 
 #print((a[0] - b[0], a[1] - b[1], a[2] - b[2]))
+
+
+Tests.test_couleur("Pictures/petites_fraises.png")
