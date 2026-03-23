@@ -91,7 +91,7 @@ class DiscreteFunction:
             y=self.y
         )
         for i in range(self.width):
-            print((i+1)*100//self.width, "%")
+            #print((i+1)*100//self.width, "%")
             for j in range(self.height):
                 g[i, j] = sum(
                     self[i - m, j - n] * other[m, n]

@@ -36,7 +36,11 @@ def getImageFromDiscreteFunction(discreteFunction:"DiscreteFunction") -> Image.I
     for i in range(0, discreteFunction.width):
         for j in range(0, discreteFunction.height):
             if discreteFunction[i,j]==None or isnan(discreteFunction[i,j]) or discreteFunction[i,j]==float("-inf") or discreteFunction[i,j]==float("inf"): image.putpixel((i,j), (255,0,0))
-            else: image.putpixel((i,j), tuple([int(abs(discreteFunction[i,j]))]*3))
+            else: 
+                a=int(discreteFunction[i,j])
+                if a>=255: a=255
+                if a<=0: a=0
+                image.putpixel((i,j), tuple([a]*3))
     
     return image
 

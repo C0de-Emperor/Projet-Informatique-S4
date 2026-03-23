@@ -1,4 +1,4 @@
-from math import atan2, pi, e, log
+from math import atan2, pi, e, log, sqrt
 from multiprocessing import Pool
 
 def arg(z:complex):
@@ -255,3 +255,9 @@ def fftShiftIndex(width, height, item:tuple):
             return (nItem[0]+hWidth, nItem[1]-hHeight)
         else:
             return (nItem[0]-hWidth, nItem[1]-hHeight)
+
+def getStatistics(list:list) -> tuple[float]:
+    mean=sum(list)/len(list)
+    standardDeviation=sqrt(sum([(x-mean)**2 for x in list])/len(list))
+
+    return mean, standardDeviation

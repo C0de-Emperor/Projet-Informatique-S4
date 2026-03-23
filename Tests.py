@@ -343,3 +343,248 @@ def TrueConvolutionTest(discreteFunction:DiscreteFunction, kernel:DiscreteFuncti
     e=DiscreteFunction(IFFT2(ef.kernel))
     e.resize(coordinates=coordinates)
     e.show()
+
+def test_couleur(path):
+    image = ColorDiscreteFunctionFromImage(path)
+    image.show()
+
+    f = GaussianDiscreteFunction(5, 1)
+    d = 30.0
+    #image.apply_to_all("adaptativeGaussianConvolution", f, d)
+    image.apply_to_all("medianFilter",3)
+
+    image.show()
+
+def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
+    a=discreteFunction
+    (a2, coordinates)=a.extend((2**ceil(log(a.width,2)), 2**ceil(log(a.height,2))))
+
+    from random import random
+    sigma=round(random()*2+1, 4)
+
+    b=GaussianDiscreteFunction(sigma)
+    (b2,raf)=b.extend((a2.width, a2.height))
+    b2=b2.getCentered()
+    #b2.normalize()
+
+    af=ComplexDiscreteFunction(FFT2(a2.kernel)) 
+    b2f=ComplexDiscreteFunction(FFT2(b2.kernel))
+    cf=af*b2f
+
+    canva=Image.new("RGB", (a.width*5, a.height*4))
+
+    x=[k/10 for k in range(10,30)]
+    y={"yGradientEnergy":[],
+       "yLocalVariance":[],
+       "yEdgePreservation":[],
+       "yHistogramSpread":[],
+       "yRMS":[],
+       "ySobelVariance":[],
+       "yLaplacianVariance":[],
+       "ySSIM":[],
+       "yPSNR":[],
+       "yMSE":[]}
+
+    for k in range(10,30):
+        d=GaussianDiscreteFunction(k/10)
+        (d,raf)=d.extend((a2.width, a2.height))
+        d2=d.getCentered()
+        d2f=ComplexDiscreteFunction(FFT2(d2.kernel))
+
+        ef=cf/d2f
+        e=DiscreteFunction(IFFT2(ef.kernel))
+        e.resize(coordinates=coordinates)
+
+        eIm=getImageFromDiscreteFunction(e)
+        canva.paste(eIm, ((((k-10)%5)*a.width),((k-10)//5)*a.height))
+        #eIm.save("__pycache__/"+str(k/10)+".png")
+
+
+        y["yEdgePreservation"].append(EdgePreservation(a, e))
+        y["yGradientEnergy"].append(GradientEnergy(e))
+        y["yHistogramSpread"].append(HistogramSpread(e))
+        y["yLaplacianVariance"].append(LaplacianVariance(e))
+        y["yLocalVariance"].append(LocalVariance(e))
+        y["yMSE"].append(MSE(a, e))
+        y["yPSNR"].append(PSNR(a, e))
+        y["yRMS"].append(RMS(e))
+        y["ySobelVariance"].append(SobelVariance(e))
+        y["ySSIM"].append(SSIM(a, e))
+
+        print("---------", (k-9)/(20)*100, "%")
+
+    for k in range(len(y.keys())):
+        plt.subplot(4, 3, k+1)
+        plt.plot(x, y[list(y.keys())[k]], "o-")
+        plt.title(list(y.keys())[k])
+
+    canva.show()
+    canva.save("__pycache__/canva.png")
+
+    print("SIGMA:", sigma)
+
+    plt.show()
+
+def gaussianDeconvolutionTest(originalDiscreteFunction:DiscreteFunction, extendedDiscreteFunction:DiscreteFunction, blurredDiscreteFunctionFourier:ComplexDiscreteFunction, coordinates:tuple, sigma:float):
+    a=originalDiscreteFunction
+    a2=extendedDiscreteFunction
+    cf=blurredDiscreteFunctionFourier
+
+    d=GaussianDiscreteFunction(sigma)
+    (d,raf)=d.extend((a2.width, a2.height))
+    d2=d.getCentered()
+    d2f=ComplexDiscreteFunction(FFT2(d2.kernel))
+
+    ef=cf/d2f
+    e=DiscreteFunction(IFFT2(ef.kernel))
+    e.resize(coordinates=coordinates)
+
+    y={"yGradientEnergy":0,
+       "yLocalVariance":0,
+       "yEdgePreservation":0,
+       "yHistogramSpread":0,
+       "yRMS":0,
+       #"ySobelVariance":0,
+       "yLaplacianVariance":0,
+       "ySSIM":0,
+       "yPSNR":0,
+       "yMSE":0}
+
+    y["yEdgePreservation"]=(EdgePreservation(a, e))
+    y["yGradientEnergy"]=(GradientEnergy(e))
+    y["yHistogramSpread"]=(HistogramSpread(e))
+    y["yLaplacianVariance"]=(LaplacianVariance(e))
+    y["yLocalVariance"]=(LocalVariance(e))
+    y["yMSE"]=(MSE(a, e))
+    y["yPSNR"]=(PSNR(a, e))
+    y["yRMS"]=(RMS(e))
+    #y["ySobelVariance"]=(SobelVariance(e))
+    y["ySSIM"]=(SSIM(a, e))
+
+    return getImageFromDiscreteFunction(e), y
+
+def MultipleDeconvolutionBoostTest(discreteFunction:DiscreteFunction):
+    from random import random
+    startTime=time.time()
+
+    sigma=round(random()*2.99+0.01, 3)
+
+    a=discreteFunction
+    (a2, coordinates)=a.extend((2**ceil(log(a.width,2)), 2**ceil(log(a.height,2))))
+
+    b=GaussianDiscreteFunction(sigma)
+    (b2,raf)=b.extend((a2.width, a2.height))
+    b2=b2.getCentered()
+    #b2.normalize()
+
+    af=ComplexDiscreteFunction(FFT2(a2.kernel)) 
+    b2f=ComplexDiscreteFunction(FFT2(b2.kernel))
+    cf=af*b2f
+
+    canva=Image.new("RGB", (a.width*18,  a.height*18))
+
+    x=[k/100 for k in range(1, 300)]
+    y={"yGradientEnergy":[],
+       "yLocalVariance":[],
+       "yEdgePreservation":[],
+       "yHistogramSpread":[],
+       "yRMS":[],
+       #"ySobelVariance":[],
+       "yLaplacianVariance":[],
+       "ySSIM":[],
+       "yPSNR":[],
+       "yMSE":[]}
+    
+    from multiprocessing import Pool
+    mainPool=Pool()
+
+    results=mainPool.starmap(gaussianDeconvolutionTest, [[a, a2, cf, coordinates, k/100] for k in range(1, 300)])
+
+    for k in range(len(results)):
+        canva.paste(results[k][0], (((k%18)*a.width),(k//18)*a.height))
+        for key, value in results[k][1].items():
+            y[key].append(value)
+
+    #for k in range(len(y.keys())):
+    #    plt.subplot(4, 3, k+1)
+    #    plt.plot(x, y[list(y.keys())[k]], "o-")
+    #    plt.title(list(y.keys())[k])
+    
+    print("SIGMA:", sigma)
+    print("MAX SSIM:", y["ySSIM"].index(max(y["ySSIM"]))/100+0.01, "SSIM de :", max(y["ySSIM"]))
+
+    canva.show()
+    canva.save("__pycache__/canva.png")
+    #print(time.time()-startTime)
+
+    with open("__pycache__/indicators.csv", "w") as f:
+        f.write("sigma;"+";".join(y.keys())+";;"+str(sigma)+"\n")
+        for k in range(1,300):
+            f.write(";".join([str(k)]+[str(y[key][k-1]).replace(".",",") for key in y.keys()])+"\n")
+    
+    #plt.show()
+    DeconvolutionAnalyticsTest()
+    
+def DeconvolutionAnalyticsTest():
+    
+    x={"yGradientEnergy":[],
+        "yLocalVariance":[],
+        "yEdgePreservation":[],
+        "yHistogramSpread":[],
+        "yRMS":[],
+        #"ySobelVariance":[],
+        "yLaplacianVariance":[],
+        "ySSIM":[],
+        "yPSNR":[],
+        "yMSE":[]}
+    y={"yGradientEnergy":[],
+        "yLocalVariance":[],
+        "yEdgePreservation":[],
+        "yHistogramSpread":[],
+        "yRMS":[],
+        #"ySobelVariance":[],
+        "yLaplacianVariance":[],
+        "ySSIM":[],
+        "yPSNR":[],
+        "yMSE":[]}
+
+    with open("__pycache__/indicators.csv") as f:
+        lines=f.readlines()
+        header=lines[0].split(";")
+        sigma=float(header[-1].replace(",", "."))
+
+        for k in lines[1:]:
+            k=k.split(";")
+            for n in range(1, len(k)):
+                y[header[n]].append(float(k[n].replace(",", ".")))
+
+    statistics={}
+    for key, value in y.items():
+        stat=getStatistics(value)
+        statistics[key]=stat
+        print(key, ":", stat)
+
+    alpha=1
+    cutoffSSIM=0.3
+    y2=y.copy()
+    for key, value in y2.items():
+        value2=[]
+        for k in range(len(value)):
+            if y["ySSIM"][k] >= cutoffSSIM: #statistics[key][0] - alpha*statistics[key][1] <= value[k] <= statistics[key][0] + alpha*statistics[key][1]:
+                value2.append(value[k])
+                x[key].append(k/100+0.01)
+        y2[key]=value2
+
+    for k in range(len(y.keys())):
+        plt.subplot(4, 3, k+1)
+        plt.plot(x[list(x.keys())[k]], y2[list(y2.keys())[k]], "o-")
+        plt.plot([sigma-0.0001, sigma, sigma+0.0001], [min(y2[list(y2.keys())[k]]), max(y2[list(y2.keys())[k]]), min(y2[list(y2.keys())[k]])], "r-")
+        plt.title(list(y.keys())[k])
+
+    plt.show()
+
+
+if __name__ == "__main__":
+    MultipleDeconvolutionBoostTest(DiscreteFunctionFromImage("Pictures/toto.png"))
+#TestMultiplesDeconvo(DiscreteFunctionFromImage("Pictures/superman.png"))
+#DeconvolutionAnalyticsTest()

@@ -291,7 +291,7 @@ def LocalVariance(function: "DiscreteFunction", window: int = 3):
                 for n in range(-w, w+1)
             ]
             mean = sum(vals) / len(vals)
-            total += sum((v - mean)**2 for v in vals) / len(vals)
+            total += sqrt(sum((v - mean)**2 for v in vals) / len(vals))
             count += 1
 
     return total / count
@@ -308,7 +308,7 @@ def GradientEnergy(function: "DiscreteFunction"):
         for j in range(function.height):
             gx = function[i+1, j] - function[i-1, j]
             gy = function[i, j+1] - function[i, j-1]
-            total += gx*gx + gy*gy
+            total += sqrt(gx*gx + gy*gy)
     return total / (function.width * function.height)
 
 def HighFrequencyRatio(function: "ComplexDiscreteFunction"):
