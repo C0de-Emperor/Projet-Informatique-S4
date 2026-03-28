@@ -245,13 +245,13 @@ def fftShiftIndex(width, height, item:tuple):
 
     nItem = [item[0], item[1]]
 
-    if nItem[1] <= hHeight:
-        if nItem[0] <= hWidth:
+    if nItem[1] < hHeight:
+        if nItem[0] < hWidth:
             return (nItem[0]+hWidth, nItem[1]+hHeight)
         else:
             return (nItem[0]-hWidth, nItem[1]+hHeight)
     else:
-        if nItem[0] <= hWidth:
+        if nItem[0] < hWidth:
             return (nItem[0]+hWidth, nItem[1]-hHeight)
         else:
             return (nItem[0]-hWidth, nItem[1]-hHeight)

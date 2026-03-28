@@ -156,6 +156,7 @@ class TabFromDiscreteFunction(Tab):
     def getImageOrModule(discreteFunction:DiscreteFunction, frequencyDomain:DiscreteFunction):
         if frequencyDomain:
             discreteFunction=discreteFunction.getModule()
+            discreteFunction=discreteFunction.getCentered()
             discreteFunction.resizeAmplitude()
         
         return getImageFromDiscreteFunction(discreteFunction)

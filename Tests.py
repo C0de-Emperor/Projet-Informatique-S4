@@ -436,10 +436,10 @@ def gaussianDeconvolutionTest(originalDiscreteFunction:DiscreteFunction, extende
     d=GaussianDiscreteFunction(sigma)
     (d,raf)=d.extend((a2.width, a2.height))
     d2=d.getCentered()
-    d2f=ComplexDiscreteFunction(FFT2(d2.kernel))
+    d2f=ComplexDiscreteFunction(fft.fft2(d2.kernel).tolist())
 
     ef=cf/d2f
-    e=DiscreteFunction(IFFT2(ef.kernel))
+    e=ComplexDiscreteFunction(fft.ifft2(ef.kernel).tolist()).getModule(False)
     e.resize(coordinates=coordinates)
 
     y={"yGradientEnergy":0,
@@ -471,6 +471,8 @@ def MultipleDeconvolutionBoostTest(discreteFunction:DiscreteFunction):
     startTime=time.time()
 
     sigma=round(random()*2.99+0.01, 3)
+    sigma=1.5
+    print("SIGMA:", sigma)
 
     a=discreteFunction
     (a2, coordinates)=a.extend((2**ceil(log(a.width,2)), 2**ceil(log(a.height,2))))
@@ -480,13 +482,17 @@ def MultipleDeconvolutionBoostTest(discreteFunction:DiscreteFunction):
     b2=b2.getCentered()
     #b2.normalize()
 
-    af=ComplexDiscreteFunction(FFT2(a2.kernel)) 
-    b2f=ComplexDiscreteFunction(FFT2(b2.kernel))
+    af=ComplexDiscreteFunction(fft.fft2(a2.kernel).tolist()) 
+    b2f=ComplexDiscreteFunction(fft.fft2(b2.kernel).tolist())
     cf=af*b2f
 
-    canva=Image.new("RGB", (a.width*18,  a.height*18))
+    c=ComplexDiscreteFunction(fft.ifft2(cf.kernel).tolist()).getModule(False)
+    c.resize(coordinates=coordinates)
+    c.show()
 
-    x=[k/100 for k in range(1, 300)]
+    canva=Image.new("RGB", (a.width*6,  a.height*5))
+
+    x=[k/10 for k in range(1, 30)]
     y={"yGradientEnergy":[],
        "yLocalVariance":[],
        "yEdgePreservation":[],
@@ -501,10 +507,10 @@ def MultipleDeconvolutionBoostTest(discreteFunction:DiscreteFunction):
     from multiprocessing import Pool
     mainPool=Pool()
 
-    results=mainPool.starmap(gaussianDeconvolutionTest, [[a, a2, cf, coordinates, k/100] for k in range(1, 300)])
+    results=mainPool.starmap(gaussianDeconvolutionTest, [[a, a2, cf, coordinates, k/10] for k in range(1, 30)])
 
     for k in range(len(results)):
-        canva.paste(results[k][0], (((k%18)*a.width),(k//18)*a.height))
+        canva.paste(results[k][0], (((k%6)*a.width),(k//6)*a.height))
         for key, value in results[k][1].items():
             y[key].append(value)
 
@@ -514,7 +520,7 @@ def MultipleDeconvolutionBoostTest(discreteFunction:DiscreteFunction):
     #    plt.title(list(y.keys())[k])
     
     print("SIGMA:", sigma)
-    print("MAX SSIM:", y["ySSIM"].index(max(y["ySSIM"]))/100+0.01, "SSIM de :", max(y["ySSIM"]))
+    print("MAX SSIM:", y["ySSIM"].index(max(y["ySSIM"]))/10+0.1, "SSIM de :", max(y["ySSIM"]))
 
     canva.show()
     canva.save("__pycache__/canva.png")
@@ -522,7 +528,7 @@ def MultipleDeconvolutionBoostTest(discreteFunction:DiscreteFunction):
 
     with open("__pycache__/indicators.csv", "w") as f:
         f.write("sigma;"+";".join(y.keys())+";;"+str(sigma)+"\n")
-        for k in range(1,300):
+        for k in range(1,30):
             f.write(";".join([str(k)]+[str(y[key][k-1]).replace(".",",") for key in y.keys()])+"\n")
     
     #plt.show()
@@ -568,26 +574,27 @@ def DeconvolutionAnalyticsTest():
         print(key, ":", stat)
 
     alpha=1
-    cutoffSSIM=0.3
+    cutoffSSIM=0.1
     y2=y.copy()
     for key, value in y2.items():
         value2=[]
         for k in range(len(value)):
             if y["ySSIM"][k] >= cutoffSSIM: #statistics[key][0] - alpha*statistics[key][1] <= value[k] <= statistics[key][0] + alpha*statistics[key][1]:
                 value2.append(value[k])
-                x[key].append(k/100+0.01)
+                x[key].append(k/10+0.1)
         y2[key]=value2
 
     for k in range(len(y.keys())):
         plt.subplot(4, 3, k+1)
         plt.plot(x[list(x.keys())[k]], y2[list(y2.keys())[k]], "o-")
-        plt.plot([sigma-0.0001, sigma, sigma+0.0001], [min(y2[list(y2.keys())[k]]), max(y2[list(y2.keys())[k]]), min(y2[list(y2.keys())[k]])], "r-")
+        try: plt.plot([sigma-0.0001, sigma, sigma+0.0001], [min(y2[list(y2.keys())[k]]), max(y2[list(y2.keys())[k]]), min(y2[list(y2.keys())[k]])], "r-")
+        except: pass
         plt.title(list(y.keys())[k])
 
     plt.show()
 
 
-if __name__ == "__main__":
-    MultipleDeconvolutionBoostTest(DiscreteFunctionFromImage("Pictures/toto.png"))
+#if __name__ == "__main__":
+#    MultipleDeconvolutionBoostTest(DiscreteFunctionFromImage("Pictures/baba.jpg"))
 #TestMultiplesDeconvo(DiscreteFunctionFromImage("Pictures/superman.png"))
 #DeconvolutionAnalyticsTest()
