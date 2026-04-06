@@ -403,6 +403,14 @@ class DiscreteFunction:
         self.width=width
         self.height=height
 
+    def getGradient(self):
+        return self.convolve(DiscreteFunction([[0,-0.25,0],[-0.25,0,0.25],[0,0.25,0]]))
+
+    def getShiftedValue(self, x, y):
+        return self[fftShiftIndex(self.width, self.height, (x,y))]
+    
+    def setShiftedValue(self, x, y, value):
+        self[fftShiftIndex(self.width, self.height, (x,y))]=value
 
 """
     def wienerDeconvolve(self, kernel: "DiscreteFunction", K: float = 0.01):
@@ -562,38 +570,24 @@ class ComplexDiscreteFunction (DiscreteFunction):
                     self[i,j]=0
   
     def AmplitudeCutFilter(self, maxValueFraction, immunityRadius, logarithmic=True):
-        if logarithmic: maxValue=log(1+abs(self[self.width//2, self.height//2]))*maxValueFraction
-        else: maxValue=abs(self[self.width//2, self.height//2])*maxValueFraction
+        if logarithmic: maxValue=log(1+abs(self[0,0]))*maxValueFraction
+        else: maxValue=abs(self[0,0])*maxValueFraction
 
         hWidth=self.width/2
         hHeight=self.height/2
 
         for i in range(self.width):
             for j in range(self.height):
-                if sqrt((i-hWidth)**2+(j-hHeight)**2) > immunityRadius:
+                newCoos=fftShiftIndex(self.width, self.height, (i,j))
+                if sqrt((newCoos[0]-hWidth)**2+(newCoos[1]-hHeight)**2) > immunityRadius:
                     if logarithmic:
                         if log(1+abs(self[i,j])) > maxValue:
                             self[i,j]=0
                     elif abs(self[i,j]) > maxValue:
                         self[i,j]=0
-                
-        mat : list[list] = []
-
-        for j in range(self.height*2):
-            mat.append([])
-            for i in range(self.width*2):
-                if j<self.height:
-                    if i>=self.width:
-                        mat[j].append(self[i-self.width, self.height-j])
-                    else:
-                        mat[j].append(self[self.width-i, self.height-j])
-                else:
-                    if i>=self.width:
-                        mat[j].append(self[i-self.width, j-self.height])
-                    else:
-                        mat[j].append(self[self.width-i, j-self.height])
-        
-        return ComplexDiscreteFunction(mat)
+    def copy(self):
+        import copy
+        return ComplexDiscreteFunction(copy.deepcopy(self.kernel), self.x, self.y)
 
 
 class DiscreteConvertionError(Exception):
