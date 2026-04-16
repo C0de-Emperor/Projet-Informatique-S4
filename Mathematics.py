@@ -611,10 +611,16 @@ class ColorDiscreteFunction:
         self.x = x
         self.y = y
 
-    def apply_to_all(self, func_name: str, *args, **kwargs):
-        self.R = getattr(self.R, func_name)(*args, **kwargs)
-        self.G = getattr(self.G, func_name)(*args, **kwargs)
-        self.B = getattr(self.B, func_name)(*args, **kwargs)
+    def apply_to_all(self, func_name, *args, **kwargs):
+        r = func_name(self.R, *args, **kwargs)
+        g = func_name(self.G, *args, **kwargs)
+        b = func_name(self.B, *args, **kwargs)
+        if r is not None:
+            self.R = r
+        if g is not None:
+            self.G = g
+        if b is not None:
+            self.B = b
         return self
 
     def show(self):

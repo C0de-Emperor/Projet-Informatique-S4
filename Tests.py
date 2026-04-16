@@ -348,11 +348,12 @@ def TrueConvolutionTest(discreteFunction:DiscreteFunction, kernel:DiscreteFuncti
 def test_couleur(path):
     image = ColorDiscreteFunctionFromImage(path)
     image.show()
-
+    image.apply_to_all(SaltAndPaperNoising, 0.3)
+    image.show()
     f = GaussianDiscreteFunction(5, 1)
     d = 30.0
     #image.apply_to_all("adaptativeGaussianConvolution", f, d)
-    image.apply_to_all("medianFilter",3)
+    image.apply_to_all(DiscreteFunction.bilateralFilter, f, 50)
 
     image.show()
 
