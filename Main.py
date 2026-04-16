@@ -22,22 +22,22 @@ from Mathematics import *
 
 #Tests.AnalysisRandomNoisingCurveVSGaussian("Pictures/Garden_strawberry.jpg", amplitude= 40, steps=60)
 
-f = DiscreteFunctionFromImage(r'Pictures\Garden_strawberry.jpg')
-source = f.copy()
-g = GaussianDiscreteFunction(2)
+#f = DiscreteFunctionFromImage(r'Pictures\Garden_strawberry.jpg')
+#source = f.copy()
+#g = GaussianDiscreteFunction(2)
 
 #h = f.convolve(g)
 #h.show()
 
-f.apply(Noising.GaussianNoising, 0.22)
-f.show()
+#f.apply(Noising.GaussianNoising, 0.22)
+#f.show()
 
 
-result = Analysis.PartialAnalysis(source, f)
+#result = Analysis.PartialAnalysis(source, f)
 
-print(result)
+#print(result)
 
 #print((a[0] - b[0], a[1] - b[1], a[2] - b[2]))
 
 
-Tests.test_couleur("Pictures/petites_fraises.png")
+Tests.test_couleur("Pictures/pomme.webp")

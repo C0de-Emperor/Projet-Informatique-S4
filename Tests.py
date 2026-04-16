@@ -348,12 +348,12 @@ def TrueConvolutionTest(discreteFunction:DiscreteFunction, kernel:DiscreteFuncti
 def test_couleur(path):
     image = ColorDiscreteFunctionFromImage(path)
     image.show()
-    image.apply_to_all(SaltAndPaperNoising, 0.3)
+    image.apply_to_all(SaltAndPaperNoising, 0.1)
     image.show()
     f = GaussianDiscreteFunction(5, 1)
     d = 30.0
-    #image.apply_to_all("adaptativeGaussianConvolution", f, d)
-    image.apply_to_all(DiscreteFunction.bilateralFilter, f, 50)
+    #image.apply_to_all(DiscreteFunction.bilateralFilter, f, 50)
+    image.apply_to_all(DiscreteFunction.medianFilter,1)
 
     image.show()
 
@@ -426,4 +426,4 @@ def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
     canva.show()
     canva.save("__pycache__/canva.png")
 
-TestMultiplesDeconvo(DiscreteFunctionFromImage("Pictures/superman.png"))
+#TestMultiplesDeconvo(DiscreteFunctionFromImage("Pictures/superman.png"))
