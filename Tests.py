@@ -427,3 +427,21 @@ def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
     canva.save("__pycache__/canva.png")
 
 #TestMultiplesDeconvo(DiscreteFunctionFromImage("Pictures/superman.png"))
+
+def deconv_wiener(path):
+    f = DiscreteFunctionFromImage(path).apply(RandomNoising, -30, 30)
+    f.show()
+    kernel = [[1 / 9, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 1 / 9, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 1 / 9, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 1 / 9, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 1 / 9, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 1 / 9, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 1 / 9, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 1 / 9, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 1 / 9]]
+    kernel = DiscreteFunction(kernel)
+    h = f.convolve(kernel)
+    h.show()
+    g = h.wienerDeconvolve(kernel,0.01)
+    g.show()

@@ -40,4 +40,7 @@ from Mathematics import *
 #print((a[0] - b[0], a[1] - b[1], a[2] - b[2]))
 
 
-Tests.test_couleur("Pictures/pomme.webp")
+#Tests.test_couleur("Pictures/pomme.webp")
+
+if __name__ == '__main__':
+    Tests.deconv_wiener("Pictures/pomme.webp")
