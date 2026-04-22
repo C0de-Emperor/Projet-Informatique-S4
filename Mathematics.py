@@ -407,6 +407,8 @@ class DiscreteFunction:
         from MathematicsMethods import FFT2Boost, IFFT2
 
         discrete_function , coordinates = kernel.extend((self.width, self.height)) # on agrandit le kernel à la taille de l'image
+        discrete_function = discrete_function.getCentered()
+
         G = FFT2Boost(self.kernel) # image en freq
         H = FFT2Boost(discrete_function.kernel) # noyau en freq
 
@@ -417,14 +419,7 @@ class DiscreteFunction:
 
         resultat = IFFT2(F) # domaine spatial
 
-        image_restaured = [[0 for i in range(self.width)] for j in range(self.height)] # pb de fft ifft
-        for j in range(self.height):
-            for i in range(self.width):
-                y = (j + self.height // 2) % self.height
-                x = (i + self.width // 2) % self.width
-                image_restaured[y][x] = resultat[j][i]
-
-        deconv = DiscreteFunction(image_restaured)
+        deconv = DiscreteFunction(resultat)
         #deconv.resizeAmplitude(0, 255)
         return deconv
 
