@@ -18,7 +18,7 @@ def MSE(source: "DiscreteFunction", image: "DiscreteFunction"):
 
 def PSNR(source: "DiscreteFunction", image: "DiscreteFunction"):
     """
-    Basé sur le calcul direct de l’écart pixel par pixel de chaque image
+    Basé sur le calcul direct de l'écart pixel par pixel de chaque image
     """
 
     mse = MSE(source, image)
@@ -41,14 +41,14 @@ def SSIM(x: DiscreteFunction, y: DiscreteFunction):
     - 1 = Identique
 
     Description :
-    - le SSIM se concentre plus sur des caractéristiques globales de l’image en considérant les valeurs statistiques de celle-ci
+    - le SSIM se concentre plus sur des caractéristiques globales de l'image en considérant les valeurs statistiques de celle-ci
     """
 
     N = x.width * x.height
 
     # Moyennes
-    mu_x = x.Expectation()
-    mu_y = y.Expectation()
+    mu_x = x.MeanIntensity()
+    mu_y = y.MeanIntensity()
 
     # Variances et covariance
     var_x = 0
@@ -100,7 +100,7 @@ def LaplacianVariance (x: DiscreteFunction):
 
     result = x.convolve(LAPLACIAN_KERNEL)
 
-    return result.Variance()
+    return result.IntensityVariance()
 
 def SobelVariance (x: DiscreteFunction):
     """
@@ -134,9 +134,9 @@ def SobelVariance (x: DiscreteFunction):
         [-1, 0, 1]
     ])
 
-    Var_x = x.convolve(X_KERNEL).Variance()
-    Var_y = x.convolve(Y_KERNEL).Variance()
-    Var_xy = x.convolve(XY_KERNEL).Variance()
+    Var_x = x.convolve(X_KERNEL).IntensityVariance()
+    Var_y = x.convolve(Y_KERNEL).IntensityVariance()
+    Var_xy = x.convolve(XY_KERNEL).IntensityVariance()
 
     return (Var_x, Var_y, Var_xy)
 
@@ -150,7 +150,7 @@ def RMS (x: DiscreteFunction):
     bien si [45, 75]
     """
 
-    return x.StandardDeviation()
+    return x.IntensityStandardDeviation()
 
 def HistogramSpread(x: DiscreteFunction):
     """
@@ -248,9 +248,9 @@ def SaltAndPepperDetection(x: DiscreteFunction, show_plot=False):
     if show_plot:
         plt.figure()
         plt.plot(range(0, 256), hist)
-        plt.plot(range(0, 256), [x.Expectation()]*256)
-        plt.plot(range(0, 256), [x.Expectation() + x.StandardDeviation()]*256)
-        plt.plot(range(0, 256), [x.Expectation() - x.StandardDeviation()]*256)
+        plt.plot(range(0, 256), [x.MeanIntensity()]*256)
+        plt.plot(range(0, 256), [x.MeanIntensity() + x.IntensityStandardDeviation()]*256)
+        plt.plot(range(0, 256), [x.MeanIntensity() - x.IntensityStandardDeviation()]*256)
         plt.show()
 
     total = x.height * x.width
@@ -261,10 +261,60 @@ def SaltAndPepperDetection(x: DiscreteFunction, show_plot=False):
 
     return p_salt_and_pepper
 
+# Flou Gaussien
+def radial_profile(data: DiscreteFunction):
+    import numpy as np
+    y, x = np.indices((data.height, data.width))
+    center = np.array((data.height, data.width)) // 2
+    r = np.sqrt((x - center[1])**2 + (y - center[0])**2)
+    r = r.astype(int)
+
+    # Aplatir le kernel
+    kernel_flat = np.array(data.kernel).ravel()
+
+    # Somme et comptage pour chaque rayon
+    tbin = np.bincount(r.ravel(), kernel_flat)
+    nr = np.bincount(r.ravel())
+    radialprofile = tbin / nr
+    return radialprofile
+
+
+def ExtractSpacialStandartDeviation(f: DiscreteFunction):
+    from MathematicsMethods import FFT2
+    from Mathematics import ComplexDiscreteFunction
+    import numpy as np
+
+    F = ComplexDiscreteFunction(FFT2(f.kernel))
+    F.normalize()  # normalisation
+
+    S = F.getModule(False)
+    profile = radial_profile(S)
+
+    r = np.arange(len(profile))
+
+    # éviter log(0)
+    profile = np.maximum(profile, 1e-12)
+    log_profile = np.log(profile)
 
 
 
+    # Limiter le rayon pour éviter bruit
+    r_max = len(profile) // 2
+    mask = (r > 0) & (r < r_max)
 
+    import matplotlib.pyplot as plt
+    plt.plot(r[mask], log_profile[mask])
+    plt.xlabel("Rayon")
+    plt.ylabel("log(Module FFT)")
+    plt.show()
+
+    coeff = np.polyfit(r[mask]**2, log_profile[mask], 1)
+    slope = coeff[0]
+    print("Slope:", slope)
+
+    # sigma estimation
+    sigma_estimated = np.sqrt(-slope / (2 * np.pi**2))
+    return sigma_estimated
 
 
 ############## Anciens #####################
@@ -374,8 +424,8 @@ def PartialAnalysis(source: DiscreteFunction, image: DiscreteFunction):
         return "Sharpening filter"  # Note: Sharpening may need implementation
     
     # Check for general noise: compare variances
-    var_source = source.Variance()
-    var_image = image.Variance()
+    var_source = source.IntensityVariance()
+    var_image = image.IntensityVariance()
     if var_image > var_source * 1.2:  # Increased variance indicates noise
         return "Bilateral filter"
     

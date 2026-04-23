@@ -116,8 +116,10 @@ class DiscreteFunction:
         for i in range(self.width):
             for j in range(self.height):
 
-                weighted_sum = 0
-                norm = 0
+                weighted_sum = 0.0
+                norm = 0.0
+
+                center_pixel = self[i, j]
 
                 for m in range(other.width):
                     for n in range(other.height):
@@ -125,18 +127,25 @@ class DiscreteFunction:
                         dx = m - centerX
                         dy = n - centerY
 
-                        neighbor = self[i + dx, j + dy]
-                        center_pixel = self[i, j]
+                        x = i + dx
+                        y = j + dy
 
-                        if abs(center_pixel - neighbor) < diff:
+                        # gestion des bords
+                        if 0 <= x < self.width and 0 <= y < self.height:
+
+                            neighbor = self[x, y]
                             weight = other[m, n]
+
+                            if abs(center_pixel - neighbor) >= diff:
+                                weight = 0
+
                             weighted_sum += neighbor * weight
                             norm += weight
 
                 if norm != 0:
                     g[i, j] = weighted_sum / norm
                 else:
-                    g[i, j] = self[i, j]
+                    g[i, j] = center_pixel
 
         return g
 
@@ -225,7 +234,9 @@ class DiscreteFunction:
         self.kernel = newKernel
         return self
 
-    def Expectation(self):
+
+
+    def MeanIntensity(self):
         N = self.width * self.height
         total = 0
         for j in range(self.height):
@@ -233,8 +244,17 @@ class DiscreteFunction:
                 total += self[i, j]
         return total / N
 
-    def Variance (self):
-        mean = self.Expectation()
+    def IntensityVariance (self):
+        """
+        mesure la variance des **intensités** de pixels. \n
+        Détermine à quel point les pixels sont différents de la moyenne. \n
+        Utilisé pour :
+        - contraste
+        - bruit
+        
+        """
+
+        mean = self.MeanIntensity()
         N = self.width * self.height
 
         variance = sum(
@@ -242,12 +262,38 @@ class DiscreteFunction:
             for j in range(self.height)
             for i in range(self.width)
         ) / N
-
         return variance
 
-    def StandardDeviation(self):
+    def IntensityStandardDeviation(self):
+        """
+        mesure l'ecart type des **intensités** de pixels. \n
+        Détermine à quel point les pixels sont différents de la moyenne. \n
+        Utilisé pour :
+        - contraste
+        - bruit
+        """
         from math import sqrt
-        return sqrt(self.Variance())
+        return sqrt(self.IntensityVariance())
+
+    def SpatialVariance(self, dimension: int):
+        center_x = self.width // 2
+        center_y = self.height // 2
+
+        variance = 0.0
+
+        for j in range(self.height):
+            for i in range(self.width):
+                dx = i - center_x
+                dy = j - center_y
+                variance += self[i, j] * (dx**2 + dy**2)
+
+        return variance / dimension
+
+    def SpatialStandardDeviation(self, dimension: int):
+        from math import sqrt
+        return sqrt(self.SpatialVariance(dimension))
+
+
 
     def apply(self, func, *args, **kwargs):
         func(self, *args, **kwargs)
@@ -423,46 +469,6 @@ class DiscreteFunction:
         #deconv.resizeAmplitude(0, 255)
         return deconv
 
-
-"""
-    def wienerDeconvolve(self, kernel: "DiscreteFunction", K: float = 0.01):
-
-        #Déconvolution de Wiener pour retirer un flou.
-
-        #kernel : noyau de convolution (PSF)
-        #K : paramètre de régularisation bruit/signal
-
-
-        from MathematicsMethods import FFT2Boost
-
-        # FFT de l'image floue
-        F = DiscreteFunction(FFT2Boost(self.kernel))
-
-        # FFT du noyau (mis à la taille de l'image)
-        #H = kernel.pad(self.width, self.height).fft2()
-
-        # Filtre de Wiener
-        for i in range(F.width):
-            for j in range(F.height):
-
-                h = H[i, j]
-
-                if abs(h) == 0:
-                    F[i, j] = 0
-                else:
-                    F[i, j] = F[i, j] * h.conjugate() / (abs(h)**2 + K)
-
-        # Retour domaine spatial
-        deconv = F.ifft2()
-
-        # Garder la partie réelle
-        deconv = deconv.real()
-
-        # Normalisation
-        deconv.resizeAmplitude(0, 255)
-
-        return deconv
-""" 
 
 class DiscreteFunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):

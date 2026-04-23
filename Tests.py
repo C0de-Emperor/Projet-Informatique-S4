@@ -374,7 +374,7 @@ def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
     b2f=ComplexDiscreteFunction(FFT2(b2.kernel))
     cf=af*b2f
 
-    canva=Image.new("RGB", (a.width*5, a.height*4))
+    canva=Image.new("RGB", (a.width*10, a.height*10))
 
     x=[k/10 for k in range(10,30)]
     y={"yGradientEnergy":[],
@@ -388,8 +388,8 @@ def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
        "yPSNR":[],
        "yMSE":[]}
 
-    for k in range(10,30):
-        d=GaussianDiscreteFunction(k/10)
+    for k in range(100,300):
+        d=GaussianDiscreteFunction(k/100)
         (d,raf)=d.extend((a2.width, a2.height))
         d2=d.getCentered()
         d2f=ComplexDiscreteFunction(FFT2(d2.kernel))
@@ -399,29 +399,29 @@ def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
         e.resize(coordinates=coordinates)
 
         eIm=getImageFromDiscreteFunction(e)
-        canva.paste(eIm, ((((k-10)%5)*a.width),((k-10)//5)*a.height))
+        canva.paste(eIm, ((((k-100)%10)*a.width),((k-9)//10)*a.height))
         #eIm.save("__pycache__/"+str(k/10)+".png")
 
 
-        y["yEdgePreservation"]=EdgePreservation(a, e)
-        y["yGradientEnergy"]=GradientEnergy(e)
-        y["yHistogramSpread"]=HistogramSpread(e)
-        y["yLaplacianVariance"]=LaplacianVariance(e)
-        y["yLocalVariance"]=LocalVariance(e)
-        y["yMSE"]=MSE(a, e)
-        y["yPSNR"]=PSNR(a, e)
-        y["yRMS"]=RMS(e)
-        y["ySobelVariance"]=SobelVariance(e)
-        y["ySSIM"]=SSIM(a, e)
+        #y["yEdgePreservation"]=EdgePreservation(a, e)
+        #y["yGradientEnergy"]=GradientEnergy(e)
+        #y["yHistogramSpread"]=HistogramSpread(e)
+        #y["yLaplacianVariance"]=LaplacianVariance(e)
+        #y["yLocalVariance"]=LocalVariance(e)
+        #y["yMSE"]=MSE(a, e)
+        #y["yPSNR"]=PSNR(a, e)
+        #y["yRMS"]=RMS(e)
+        #y["ySobelVariance"]=SobelVariance(e)
+        #y["ySSIM"]=SSIM(a, e)
 
-        print("---------", (k-9)/(20)*100, "%")
+        print("---------", (k-99)/(200)*100, "%")
 
-    for k in range(len(y.keys())):
+    """for k in range(len(y.keys())):
         plt.subplot(4, 3, k+1)
         plt.plot(x, y[y.keys()[k]], "o-")
         plt.title(y.keys()[k])
     
-    plt.show()
+    plt.show()"""
 
     canva.show()
     canva.save("__pycache__/canva.png")

@@ -1,5 +1,5 @@
-import Tests
-import Analysis, Noising
+#import Tests
+#import Analysis, Noising
 from Mathematics import *
 
 #Tests.AdaptativeGaussianFilterTest(r'Pictures\Garden_strawberry.jpg')
@@ -25,6 +25,10 @@ from Mathematics import *
 #f = DiscreteFunctionFromImage(r'Pictures\Garden_strawberry.jpg')
 #source = f.copy()
 #g = GaussianDiscreteFunction(2)
+"""
+f = DiscreteFunctionFromImage(r'Pictures\Garden_strawberry.jpg')
+source = f.copy()
+g = GaussianDiscreteFunction(2)
 
 #h = f.convolve(g)
 #h.show()
@@ -40,7 +44,13 @@ from Mathematics import *
 #print((a[0] - b[0], a[1] - b[1], a[2] - b[2]))
 
 
-#Tests.test_couleur("Pictures/pomme.webp")
+Tests.test_couleur("Pictures/petites_fraises.png")
+"""
 
-if __name__ == '__main__':
-    Tests.deconv_wiener("Pictures/pomme.webp")
+f = DiscreteFunctionFromImage(r'Pictures\photo_Projet_2 (1).png')
+
+g = GaussianDiscreteFunction(2)
+
+f.show()
+
+
