@@ -368,7 +368,7 @@ def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
     b2=b2.getCentered()
     #b2.normalize()
 
-    af=ComplexDiscreteFunction(FFT2(a2.kernel)) 
+    af=ComplexDiscreteFunction(FFT2(a2.kernel))
     b2f=ComplexDiscreteFunction(FFT2(b2.kernel))
     cf=af*b2f
 
@@ -473,7 +473,8 @@ def MultipleDeconvolutionBoostTest(discreteFunction:DiscreteFunction):
     print("SIGMA:", sigma)
 
     a=discreteFunction
-    (a2, coordinates)=a.extend((2**ceil(log(a.width,2)), 2**ceil(log(a.height,2))))
+    a2=a
+    coordinates = (0,0,a.width, a.height)#(a2, coordinates)=a.extend((2**ceil(log(a.width,2)), 2**ceil(log(a.height,2))))
 
     b=GaussianDiscreteFunction(sigma)
     (b2,raf)=b.extend((a2.width, a2.height))
@@ -605,11 +606,10 @@ def PeriodicNoiseRemovalTest(discreteFunction:DiscreteFunction):
     a=discreteFunction
     
     b=a.copy()
-    for k in range(b.width):
+    """for k in range(b.width):
         for n in range(b.height):
-            b[k,n]-=cos(n)*70+58
+            b[k,n]-=cos(n)*70+58"""
     #b.show()
-    
     
     bf=ComplexDiscreteFunction(fft.fft2(b.kernel))
     
@@ -782,7 +782,7 @@ def GaussianNoiseRemoval(discreteFunction:DiscreteFunction, minValue:float, maxV
 
     SSIMs=[]
     for k in range(len(results)):
-        if results[k][1] >= 0.1:
+        if results[k][1] >= 0:
             SSIMs.append(results[k][1])
     SSIMs.sort()
     medianSSIM=SSIMs[len(SSIMs)//2]
@@ -807,13 +807,13 @@ def GaussianNoiseRemoval(discreteFunction:DiscreteFunction, minValue:float, maxV
 
 
 
-
+"""
 if __name__ == "__main__": 
     from random import random
 
     sigma=round(random()*3+0.1, 2)
 
-    a=DiscreteFunctionFromImage("Pictures/toto.png")
+    a=DiscreteFunctionFromImage("Pictures/elephant.png")
     af=ComplexDiscreteFunction(fft.fft2(a.kernel).tolist())
 
     b=GaussianDiscreteFunction(sigma)
@@ -826,11 +826,11 @@ if __name__ == "__main__":
 
     c.show()
 
-    #MultipleDeconvolutionBoostTest(DiscreteFunctionFromImage("Pictures/toto.png"))
+    #MultipleDeconvolutionBoostTest(DiscreteFunctionFromImage("Pictures/elephant.png"))
     result=GaussianNoiseRemoval(c, 0.1, 3, 300)
     result.show()
 
-    print(sigma)
+    print(sigma)"""
 #TestMultiplesDeconvo(DiscreteFunctionFromImage("Pictures/superman.png"))
 #DeconvolutionAnalyticsTest()
 
@@ -838,3 +838,45 @@ if __name__ == "__main__":
 #PeriodicNoiseRemovalTest(DiscreteFunctionFromImage("Pictures/rubiks.png"))
 
 #GaussianNoiseRemoval(None, 0.1,1,10)
+"""
+if __name__=="__main__":
+    #MultipleDeconvolutionBoostTest(DiscreteFunctionFromImage("pictures/blue lobster.jpg"))
+    a=DiscreteFunctionFromImage("pictures/blue lobster.jpg")
+    af=ComplexDiscreteFunction(fft.fft2(a.kernel).tolist())
+
+    b=GaussianDiscreteFunction(1.5)
+    (b, coordinates)=b.extend((a.width, a.height))
+    bf=ComplexDiscreteFunction(fft.fft2(b.kernel).tolist())
+
+    cf=af*bf
+    c=ComplexDiscreteFunction(fft.ifft2(cf.kernel).tolist()).getModule(False)
+
+    GaussianNoiseRemoval(c, 0.1, 3.0, 100)"""
+
+"""
+a=DiscreteFunctionFromImage("pictures/blue lobster.jpg")
+af=ComplexDiscreteFunction(fft.fft2(a.kernel).tolist())
+
+b=GaussianDiscreteFunction(1)
+(b, coordinates)=b.extend((a.width, a.height))
+bf=ComplexDiscreteFunction(fft.fft2(b.kernel).tolist())
+
+cf=af*bf
+c=ComplexDiscreteFunction(fft.ifft2(cf.kernel).tolist()).getModule(False)
+
+sigmas=[0.5, 1.5]
+for k in range(len(sigmas)):
+    d=GaussianDiscreteFunction(sigmas[k])
+    (d, raf)=d.extend((c.width, c.height))
+    d=d.getCentered()
+    
+    df=ComplexDiscreteFunction(fft.fft2(d.kernel).tolist())
+
+    ef=cf/df
+    e=ComplexDiscreteFunction(fft.ifft2(ef.kernel).tolist()).getModule(False)
+    getImageFromDiscreteFunction(e.getCentered()).save(f"__pycache__/blueLobsterDeconvolved{k+4}.png")"""
+
+
+a=Image.open("pictures/photo_projet_3.png")
+
+print(a.mode)

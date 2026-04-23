@@ -258,7 +258,8 @@ class ImageProcessingPanel:
                                 "Filtre bilatéral": (DiscreteFunctionBilateralFilter, "kernel size", "variance de la normale")}
         
         self.frequencyFunctions={"Filtre d'amplitude": (ComplexDiscreteFunction.AmplitudeCutFilter, "maxAmp fraction"),
-                                "Filtre passe bas": (ComplexDiscreteFunction.RadiusFilter, "radius fraction")}
+                                "Filtre passe bas": (ComplexDiscreteFunction.RadiusFilter, "radius fraction"),
+                                "Filtre passe haut": (ComplexDiscreteFunction.RadiusFilterHigh, "radius fraction")}
     
     def destroyButtons(self):
         for widget in self.frame.winfo_children():

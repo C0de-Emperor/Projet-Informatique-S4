@@ -566,7 +566,20 @@ class ComplexDiscreteFunction (DiscreteFunction):
 
         for i in range(self.width):
             for j in range(self.height):
-                if sqrt((i-hWidth)**2+(j-hHeight)**2) > radius:
+                newIndex=fftShiftIndex(self.width, self.height, (i,j))
+                if sqrt((newIndex[0]-hWidth)**2+(newIndex[1]-hHeight)**2) > radius:
+                    self[i,j]=0
+    
+    def RadiusFilterHigh(self, radiusFraction:float):
+        radius=max(self.height, self.width)*radiusFraction/2
+
+        hWidth=self.width/2
+        hHeight=self.height/2
+
+        for i in range(self.width):
+            for j in range(self.height):
+                newIndex=fftShiftIndex(self.width, self.height, (i,j))
+                if sqrt((newIndex[0]-hWidth)**2+(newIndex[1]-hHeight)**2) <= radius:
                     self[i,j]=0
   
     def AmplitudeCutFilter(self, maxValueFraction, immunityRadius, logarithmic=True):
@@ -585,6 +598,7 @@ class ComplexDiscreteFunction (DiscreteFunction):
                             self[i,j]=0
                     elif abs(self[i,j]) > maxValue:
                         self[i,j]=0
+    
     def copy(self):
         import copy
         return ComplexDiscreteFunction(copy.deepcopy(self.kernel), self.x, self.y)
