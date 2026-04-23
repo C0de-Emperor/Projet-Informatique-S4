@@ -91,7 +91,7 @@ class DiscreteFunction:
             y=self.y
         )
         for i in range(self.width):
-            print((i+1)*100//self.width, "%")
+            #print((i+1)*100//self.width, "%")
             for j in range(self.height):
                 g[i, j] = sum(
                     self[i - m, j - n] * other[m, n]
@@ -469,6 +469,14 @@ class DiscreteFunction:
         #deconv.resizeAmplitude(0, 255)
         return deconv
 
+    def getGradient(self):
+        return self.convolve(DiscreteFunction([[0,-0.25,0],[-0.25,0,0.25],[0,0.25,0]]))
+
+    def getShiftedValue(self, x, y):
+        return self[fftShiftIndex(self.width, self.height, (x,y))]
+    
+    def setShiftedValue(self, x, y, value):
+        self[fftShiftIndex(self.width, self.height, (x,y))]=value
 
 class DiscreteFunctionFromImage (DiscreteFunction):
     def __init__(self, path:str, coeffs:tuple=(0.299, 0.587, 0.114), x:int = 0, y:int = 0):
@@ -584,42 +592,42 @@ class ComplexDiscreteFunction (DiscreteFunction):
 
         for i in range(self.width):
             for j in range(self.height):
-                if sqrt((i-hWidth)**2+(j-hHeight)**2) > radius:
+                newIndex=fftShiftIndex(self.width, self.height, (i,j))
+                if sqrt((newIndex[0]-hWidth)**2+(newIndex[1]-hHeight)**2) > radius:
                     self[i,j]=0
-  
-    def AmplitudeCutFilter(self, maxValueFraction, immunityRadius, logarithmic=True):
-        if logarithmic: maxValue=log(1+abs(self[self.width//2, self.height//2]))*maxValueFraction
-        else: maxValue=abs(self[self.width//2, self.height//2])*maxValueFraction
+    
+    def RadiusFilterHigh(self, radiusFraction:float):
+        radius=max(self.height, self.width)*radiusFraction/2
 
         hWidth=self.width/2
         hHeight=self.height/2
 
         for i in range(self.width):
             for j in range(self.height):
-                if sqrt((i-hWidth)**2+(j-hHeight)**2) > immunityRadius:
+                newIndex=fftShiftIndex(self.width, self.height, (i,j))
+                if sqrt((newIndex[0]-hWidth)**2+(newIndex[1]-hHeight)**2) <= radius:
+                    self[i,j]=0
+  
+    def AmplitudeCutFilter(self, maxValueFraction, immunityRadius, logarithmic=True):
+        if logarithmic: maxValue=log(1+abs(self[0,0]))*maxValueFraction
+        else: maxValue=abs(self[0,0])*maxValueFraction
+
+        hWidth=self.width/2
+        hHeight=self.height/2
+
+        for i in range(self.width):
+            for j in range(self.height):
+                newCoos=fftShiftIndex(self.width, self.height, (i,j))
+                if sqrt((newCoos[0]-hWidth)**2+(newCoos[1]-hHeight)**2) > immunityRadius:
                     if logarithmic:
                         if log(1+abs(self[i,j])) > maxValue:
                             self[i,j]=0
                     elif abs(self[i,j]) > maxValue:
                         self[i,j]=0
-                
-        mat : list[list] = []
-
-        for j in range(self.height*2):
-            mat.append([])
-            for i in range(self.width*2):
-                if j<self.height:
-                    if i>=self.width:
-                        mat[j].append(self[i-self.width, self.height-j])
-                    else:
-                        mat[j].append(self[self.width-i, self.height-j])
-                else:
-                    if i>=self.width:
-                        mat[j].append(self[i-self.width, j-self.height])
-                    else:
-                        mat[j].append(self[self.width-i, j-self.height])
-        
-        return ComplexDiscreteFunction(mat)
+    
+    def copy(self):
+        import copy
+        return ComplexDiscreteFunction(copy.deepcopy(self.kernel), self.x, self.y)
 
 
 class DiscreteConvertionError(Exception):

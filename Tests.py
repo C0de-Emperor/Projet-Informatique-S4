@@ -344,7 +344,6 @@ def TrueConvolutionTest(discreteFunction:DiscreteFunction, kernel:DiscreteFuncti
     e.resize(coordinates=coordinates)
     e.show()
 
-
 def test_couleur(path):
     image = ColorDiscreteFunctionFromImage(path)
     image.show()
@@ -370,7 +369,7 @@ def TestMultiplesDeconvo(discreteFunction:DiscreteFunction):
     b2=b2.getCentered()
     #b2.normalize()
 
-    af=ComplexDiscreteFunction(FFT2(a2.kernel)) 
+    af=ComplexDiscreteFunction(FFT2(a2.kernel))
     b2f=ComplexDiscreteFunction(FFT2(b2.kernel))
     cf=af*b2f
 
@@ -445,3 +444,455 @@ def deconv_wiener(path):
     h.show()
     g = h.wienerDeconvolve(kernel,0.01)
     g.show()
+
+    plt.show()
+
+def gaussianDeconvolutionTest(originalDiscreteFunction:DiscreteFunction, extendedDiscreteFunction:DiscreteFunction, blurredDiscreteFunctionFourier:ComplexDiscreteFunction, coordinates:tuple, sigma:float):
+    a=originalDiscreteFunction
+    a2=extendedDiscreteFunction
+    cf=blurredDiscreteFunctionFourier
+
+    d=GaussianDiscreteFunction(sigma)
+    (d,raf)=d.extend((a2.width, a2.height))
+    d2=d.getCentered()
+    d2f=ComplexDiscreteFunction(fft.fft2(d2.kernel).tolist())
+
+    ef=cf/d2f
+    e=ComplexDiscreteFunction(fft.ifft2(ef.kernel).tolist()).getModule(False)
+    e.resize(coordinates=coordinates)
+
+    y={"yGradientEnergy":0,
+       "yLocalVariance":0,
+       "yEdgePreservation":0,
+       "yHistogramSpread":0,
+       "yRMS":0,
+       #"ySobelVariance":0,
+       "yLaplacianVariance":0,
+       "ySSIM":0,
+       "yPSNR":0,
+       "yMSE":0}
+
+    y["yEdgePreservation"]=(EdgePreservation(a, e))
+    y["yGradientEnergy"]=(GradientEnergy(e))
+    y["yHistogramSpread"]=(HistogramSpread(e))
+    y["yLaplacianVariance"]=(LaplacianVariance(e))
+    y["yLocalVariance"]=(LocalVariance(e))
+    y["yMSE"]=(MSE(a, e))
+    y["yPSNR"]=(PSNR(a, e))
+    y["yRMS"]=(RMS(e))
+    #y["ySobelVariance"]=(SobelVariance(e))
+    y["ySSIM"]=(SSIM(a, e))
+
+    return getImageFromDiscreteFunction(e), y
+
+def MultipleDeconvolutionBoostTest(discreteFunction:DiscreteFunction):
+    from random import random
+    startTime=time.time()
+
+    sigma=round(random()*2.99+0.01, 3)
+    sigma=1.5
+    print("SIGMA:", sigma)
+
+    a=discreteFunction
+    a2=a
+    coordinates = (0,0,a.width, a.height)#(a2, coordinates)=a.extend((2**ceil(log(a.width,2)), 2**ceil(log(a.height,2))))
+
+    b=GaussianDiscreteFunction(sigma)
+    (b2,raf)=b.extend((a2.width, a2.height))
+    b2=b2.getCentered()
+    #b2.normalize()
+
+    af=ComplexDiscreteFunction(fft.fft2(a2.kernel).tolist()) 
+    b2f=ComplexDiscreteFunction(fft.fft2(b2.kernel).tolist())
+    cf=af*b2f
+
+    c=ComplexDiscreteFunction(fft.ifft2(cf.kernel).tolist()).getModule(False)
+    c.resize(coordinates=coordinates)
+    #c.show()
+
+    c=a
+
+    canva=Image.new("RGB", (a.width*10,  a.height*10))
+
+    x=[k/30 for k in range(1, 100)]
+    y={"yGradientEnergy":[],
+       "yLocalVariance":[],
+       "yEdgePreservation":[],
+       "yHistogramSpread":[],
+       "yRMS":[],
+       #"ySobelVariance":[],
+       "yLaplacianVariance":[],
+       "ySSIM":[],
+       "yPSNR":[],
+       "yMSE":[]}
+    
+    from multiprocessing import Pool
+    mainPool=Pool()
+
+    results=mainPool.starmap(gaussianDeconvolutionTest, [[a, a2, cf, coordinates, k/30] for k in range(1, 100)])
+
+    for k in range(len(results)):
+        canva.paste(results[k][0], (((k%10)*a.width),(k//10)*a.height))
+        for key, value in results[k][1].items():
+            y[key].append(value)
+
+    #for k in range(len(y.keys())):
+    #    plt.subplot(4, 3, k+1)
+    #    plt.plot(x, y[list(y.keys())[k]], "o-")
+    #    plt.title(list(y.keys())[k])
+    
+    #print("SIGMA:", sigma)
+    #print("MAX SSIM:", y["ySSIM"].index(max(y["ySSIM"]))/30+0.1, "SSIM de :", max(y["ySSIM"]))
+
+    canva.show()
+    canva.save("__pycache__/canva.png")
+    #print(time.time()-startTime)
+
+    with open("__pycache__/deconvolution.csv", "w") as f:
+        f.write("sigma;"+";".join(y.keys())+";;"+str(sigma)+"\n")
+        for k in range(1,100):
+            f.write(";".join([str(k)]+[str(y[key][k-1]).replace(".",",") for key in y.keys()])+"\n")
+    
+    #plt.show()
+    DeconvolutionAnalyticsTest()
+    
+def DeconvolutionAnalyticsTest():
+    
+    x={"yGradientEnergy":[],
+        "yLocalVariance":[],
+        "yEdgePreservation":[],
+        "yHistogramSpread":[],
+        "yRMS":[],
+        #"ySobelVariance":[],
+        "yLaplacianVariance":[],
+        "ySSIM":[],
+        "yPSNR":[],
+        "yMSE":[]}
+    y={"yGradientEnergy":[],
+        "yLocalVariance":[],
+        "yEdgePreservation":[],
+        "yHistogramSpread":[],
+        "yRMS":[],
+        #"ySobelVariance":[],
+        "yLaplacianVariance":[],
+        "ySSIM":[],
+        "yPSNR":[],
+        "yMSE":[]}
+
+    with open("__pycache__/deconvolution.csv") as f:
+        lines=f.readlines()
+        header=lines[0].split(";")
+        sigma=float(header[-1].replace(",", "."))
+
+        for k in lines[1:]:
+            k=k.split(";")
+            for n in range(1, len(k)):
+                y[header[n]].append(float(k[n].replace(",", ".")))
+
+    statistics={}
+    for key, value in y.items():
+        stat=getStatistics(value)
+        statistics[key]=stat
+        #print(key, ":", stat)
+
+    a=y["ySSIM"].copy()
+    a.sort()
+    SSIMMedian=a[len(a)//2]
+    SSIMMedianCutoff=False
+    
+    alpha=1
+    cutoffSSIM=0.1
+    y2=y.copy()
+    for key, value in y2.items():
+        value2=[]
+        for k in range(len(value)):
+            if y["ySSIM"][k] >= cutoffSSIM: #statistics[key][0] - alpha*statistics[key][1] <= value[k] <= statistics[key][0] + alpha*statistics[key][1]:
+                #if SSIMMedianCutoff and y["ySSIM"][k] < SSIMMedian: break
+                value2.append(value[k])
+                x[key].append((k+1)/30)
+        y2[key]=value2
+
+    for k in range(len(y.keys())):
+        plt.subplot(4, 3, k+1)
+        plt.plot(x[list(x.keys())[k]], y2[list(y2.keys())[k]], "o-")
+        try: plt.plot([sigma-0.0001, sigma, sigma+0.0001], [min(y2[list(y2.keys())[k]]), max(y2[list(y2.keys())[k]]), min(y2[list(y2.keys())[k]])], "r-")
+        except: pass
+        plt.title(list(y.keys())[k])
+
+    plt.show()
+
+def PeriodicNoiseRemovalTest(discreteFunction:DiscreteFunction):
+    from math import cos
+    
+    a=discreteFunction
+    
+    b=a.copy()
+    """for k in range(b.width):
+        for n in range(b.height):
+            b[k,n]-=cos(n)*70+58"""
+    #b.show()
+    
+    bf=ComplexDiscreteFunction(fft.fft2(b.kernel))
+    
+    canva=Image.new("RGB", (a.width*10, a.height*5))
+    
+    x=[k/100 for k in range(1,50)]
+    y={"yGradientEnergy":[],
+       "yLocalVariance":[],
+       "yEdgePreservation":[],
+       "yHistogramSpread":[],
+       "yRMS":[],
+       "yLaplacianVariance":[],
+       "ySSIM":[],
+       "yPSNR":[],
+       "yMSE":[]}
+    
+    for k in range(1,50):
+        bf2=bf.copy()
+        bf2.AmplitudeCutFilter(k/100, 4, False)
+    
+        b2=ComplexDiscreteFunction(fft.ifft2(bf2.kernel).tolist()).getModule(False)
+        b2Im=getImageFromDiscreteFunction(b2)
+    
+        canva.paste(b2Im, ((((k-1)%10)*a.width),((k-1)//10)*a.height))
+    
+        #eIm.save("__pycache__/"+str(k/10)+".png")
+        y["yEdgePreservation"].append(EdgePreservation(b, b2))
+        y["yGradientEnergy"].append(GradientEnergy(b2))
+        y["yHistogramSpread"].append(HistogramSpread(b2))
+        y["yLaplacianVariance"].append(LaplacianVariance(b2))
+        y["yLocalVariance"].append(LocalVariance(b2))
+        y["yMSE"].append(MSE(b, b2))
+        y["yPSNR"].append(PSNR(b, b2))
+        y["yRMS"].append(RMS(b2))
+        y["ySSIM"].append(SSIM(b, b2))
+    
+        print("---------", ((k+1)*100)//(50), "%")
+    
+    for k in range(len(y.keys())):
+        plt.subplot(4, 3, k+1)
+        plt.plot(x, y[list(y.keys())[k]], "o-")
+        plt.title(list(y.keys())[k])
+    
+    with open("__pycache__/periodicNoise.csv", "w") as f:
+        f.write("cutoff;"+";".join(y.keys())+"\n")
+        for k in range(1,50):
+            f.write(";".join([str(k)]+[str(y[key][k-1]).replace(".",",") for key in y.keys()])+"\n")
+    
+    canva.show()
+    canva.save("__pycache__/canva.png")
+    
+    #plt.show()
+    PeriodicNoiseAnalyticsTest()
+
+def PeriodicNoiseAnalyticsTest():
+    
+    x={"yGradientEnergy":[],
+        "yLocalVariance":[],
+        "yEdgePreservation":[],
+        "yHistogramSpread":[],
+        "yRMS":[],
+        #"ySobelVariance":[],
+        "yLaplacianVariance":[],
+        "ySSIM":[],
+        "yPSNR":[],
+        "yMSE":[]}
+    y={"yGradientEnergy":[],
+        "yLocalVariance":[],
+        "yEdgePreservation":[],
+        "yHistogramSpread":[],
+        "yRMS":[],
+        #"ySobelVariance":[],
+        "yLaplacianVariance":[],
+        "ySSIM":[],
+        "yPSNR":[],
+        "yMSE":[]}
+
+    with open("__pycache__/periodicNoise.csv") as f:
+        lines=f.readlines()
+        header=lines[0].split(";")
+
+        for k in lines[1:]:
+            k=k.split(";")
+            for n in range(1, len(k)):
+                y[header[n].rstrip()].append(float(k[n].replace(",", ".")))
+
+    statistics={}
+    for key, value in y.items():
+        stat=getStatistics(value)
+        statistics[key]=stat
+        print(key, ":", stat)
+
+    alpha=1
+    cutoffSSIM=0.8
+    y2=y.copy()
+    for key, value in y2.items():
+        value2=[]
+        for k in range(len(value)):
+            if y["ySSIM"][k] >= cutoffSSIM: #statistics[key][0] - alpha*statistics[key][1] <= value[k] <= statistics[key][0] + alpha*statistics[key][1]:
+                value2.append(value[k])
+                x[key].append(k/100+0.01)
+        y2[key]=value2
+
+    for k in range(len(y.keys())):
+        plt.subplot(4, 3, k+1)
+        plt.plot(x[list(x.keys())[k]], y2[list(y2.keys())[k]], "o-")
+        plt.title(list(y.keys())[k])
+
+    plt.show()
+
+def PeriodicNoiseRemoval(discreteFunction:DiscreteFunction) -> DiscreteFunction:
+    a=discreteFunction
+    af=ComplexDiscreteFunction(fft.fft2(a.kernel).tolist())
+
+    a2s=[]
+    SSIMs=[]
+
+    for k in range(1,50):
+        af2=af.copy()
+        af2.AmplitudeCutFilter(k/100, 4, False)
+    
+        a2=ComplexDiscreteFunction(fft.ifft2(af2.kernel).tolist()).getModule(False)
+        a2s.append(a2)
+
+        SSIMs.append(SSIM(a, a2))
+
+        print(k*2, "%")
+
+        if len(SSIMs) >= 2 and SSIMs[-1] == SSIMs[-2]:
+            return a2
+    
+    minSSIMGradIndex=0
+    minSSIMGrad=float("+inf")
+
+    for k in range(len(SSIMs)-1):
+        SSIMGrad=SSIMs[k+1]-SSIMs[k]
+        if SSIMGrad < minSSIMGrad:
+            minSSIMGrad=SSIMGrad
+            minSSIMGradIndex=k+1
+    
+    return a2s[minSSIMGradIndex]
+
+def GaussianDeconvolution(discreteFunction, discreteFunctionFourier, sigma):
+    a=discreteFunction
+    af=discreteFunctionFourier
+
+    d=GaussianDiscreteFunction(sigma)
+    (d,raf)=d.extend((af.width, af.height))
+    d2=d.getCentered()
+    d2f=ComplexDiscreteFunction(fft.fft2(d2.kernel).tolist())
+
+    ef=af/d2f
+    e=ComplexDiscreteFunction(fft.ifft2(ef.kernel).tolist()).getModule(False)
+
+    return e, SSIM(a, e), HistogramSpread(e), sigma
+
+def GaussianNoiseRemoval(discreteFunction:DiscreteFunction, minValue:float, maxValue:float, steps:int):
+    assert minValue < maxValue
+
+    a=discreteFunction
+    af=ComplexDiscreteFunction(fft.fft2(a.kernel).tolist())
+
+    increments=round((maxValue-minValue)/(steps-1), 4)
+    sigmas=[round(minValue+k*increments, 4) for k in range(steps)]
+
+    pool=Pool()
+    results=pool.starmap(GaussianDeconvolution, [(a, af, sigmas[k]) for k in range(len(sigmas))])
+    
+
+
+    SSIMs=[]
+    for k in range(len(results)):
+        if results[k][1] >= 0:
+            SSIMs.append(results[k][1])
+    SSIMs.sort()
+    medianSSIM=SSIMs[len(SSIMs)//2]
+
+
+    goodSSIMs=[]
+    for k in range(len(results)):
+        if results[k][1] >= medianSSIM:
+            goodSSIMs.append(results[k])
+    
+    goodSSIMs.sort(key=lambda x: x[2])
+
+    sideSize=ceil(sqrt(steps))
+    canva=Image.new("RGB", (a.width*sideSize,  a.height*sideSize))
+    for k in range(len(results)):
+        canva.paste(getImageFromDiscreteFunction(results[k][0]), (((k%sideSize)*a.width),(k//sideSize)*a.height))
+    
+    canva.show()
+
+    print(goodSSIMs[-1][3])
+    return goodSSIMs[-1][0]
+
+
+
+"""
+if __name__ == "__main__": 
+    from random import random
+
+    sigma=round(random()*3+0.1, 2)
+
+    a=DiscreteFunctionFromImage("Pictures/elephant.png")
+    af=ComplexDiscreteFunction(fft.fft2(a.kernel).tolist())
+
+    b=GaussianDiscreteFunction(sigma)
+    (b, raf)=b.extend((a.width, a.height))
+    b2=b.getCentered()
+    b2f=ComplexDiscreteFunction(fft.fft2(b2.kernel).tolist())
+
+    cf=af*b2f
+    c=ComplexDiscreteFunction(fft.ifft2(cf.kernel).tolist()).getModule(False)
+
+    c.show()
+
+    #MultipleDeconvolutionBoostTest(DiscreteFunctionFromImage("Pictures/elephant.png"))
+    result=GaussianNoiseRemoval(c, 0.1, 3, 300)
+    result.show()
+
+    print(sigma)"""
+#TestMultiplesDeconvo(DiscreteFunctionFromImage("Pictures/superman.png"))
+#DeconvolutionAnalyticsTest()
+
+#PeriodicNoiseAnalyticsTest()
+#PeriodicNoiseRemovalTest(DiscreteFunctionFromImage("Pictures/rubiks.png"))
+
+#GaussianNoiseRemoval(None, 0.1,1,10)
+"""
+if __name__=="__main__":
+    #MultipleDeconvolutionBoostTest(DiscreteFunctionFromImage("pictures/blue lobster.jpg"))
+    a=DiscreteFunctionFromImage("pictures/blue lobster.jpg")
+    af=ComplexDiscreteFunction(fft.fft2(a.kernel).tolist())
+
+    b=GaussianDiscreteFunction(1.5)
+    (b, coordinates)=b.extend((a.width, a.height))
+    bf=ComplexDiscreteFunction(fft.fft2(b.kernel).tolist())
+
+    cf=af*bf
+    c=ComplexDiscreteFunction(fft.ifft2(cf.kernel).tolist()).getModule(False)
+
+    GaussianNoiseRemoval(c, 0.1, 3.0, 100)"""
+
+"""
+a=DiscreteFunctionFromImage("pictures/blue lobster.jpg")
+af=ComplexDiscreteFunction(fft.fft2(a.kernel).tolist())
+
+b=GaussianDiscreteFunction(1)
+(b, coordinates)=b.extend((a.width, a.height))
+bf=ComplexDiscreteFunction(fft.fft2(b.kernel).tolist())
+
+cf=af*bf
+c=ComplexDiscreteFunction(fft.ifft2(cf.kernel).tolist()).getModule(False)
+
+sigmas=[0.5, 1.5]
+for k in range(len(sigmas)):
+    d=GaussianDiscreteFunction(sigmas[k])
+    (d, raf)=d.extend((c.width, c.height))
+    d=d.getCentered()
+    
+    df=ComplexDiscreteFunction(fft.fft2(d.kernel).tolist())
+
+    ef=cf/df
+    e=ComplexDiscreteFunction(fft.ifft2(ef.kernel).tolist()).getModule(False)
+    getImageFromDiscreteFunction(e.getCentered()).save(f"__pycache__/blueLobsterDeconvolved{k+4}.png")"""
