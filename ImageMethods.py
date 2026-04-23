@@ -10,18 +10,31 @@ def getKernelFromImage(image:Image.Image, coeffs:tuple=(0.299, 0.587, 0.114)) ->
         # coeffs[0], coeffs[1], coeffs[3] sont les coefficients de la combinaison lineaire respectivement de rouge, vert et bleu
 
         imageKernel = []
-        if type(image.getpixel((0,0)))==int:
+        if image.mode == "CMYK":
             for j in range(image.height):
                 imageKernel.append([])
                 for i in range(image.width):
                     pixelColors = image.getpixel((i,j))
-                    imageKernel[j].append(pixelColors)
+                    imageKernel[j].append(255-round(sum([coeffs[k]*pixelColors[k] for k in range(3)])))
+        if image.mode == "LA":
+            for j in range(image.height):
+                imageKernel.append([])
+                for i in range(image.width):
+                    pixelColors = image.getpixel((i,j))
+                    imageKernel[j].append(pixelColors[0])
         else:
-            for j in range(image.height):
-                imageKernel.append([])
-                for i in range(image.width):
-                    pixelColors = image.getpixel((i,j))
-                    imageKernel[j].append(round(sum([coeffs[k]*pixelColors[k] for k in range(3)])))
+            if type(image.getpixel((0,0)))==int:
+                for j in range(image.height):
+                    imageKernel.append([])
+                    for i in range(image.width):
+                        pixelColors = image.getpixel((i,j))
+                        imageKernel[j].append(pixelColors)
+            else:
+                for j in range(image.height):
+                    imageKernel.append([])
+                    for i in range(image.width):
+                        pixelColors = image.getpixel((i,j))
+                        imageKernel[j].append(round(sum([coeffs[k]*pixelColors[k] for k in range(3)])))
 
         return imageKernel
 
@@ -42,7 +55,11 @@ def getImageFromDiscreteFunction(discreteFunction:"DiscreteFunction") -> Image.I
     for i in range(0, discreteFunction.width):
         for j in range(0, discreteFunction.height):
             if discreteFunction[i,j]==None or isnan(discreteFunction[i,j]) or discreteFunction[i,j]==float("-inf") or discreteFunction[i,j]==float("inf"): image.putpixel((i,j), (255,0,0))
-            else: image.putpixel((i,j), tuple([int(abs(discreteFunction[i,j]))]*3))
+            else: 
+                a=int(discreteFunction[i,j])
+                if a>=255: a=255
+                if a<=0: a=0
+                image.putpixel((i,j), tuple([a]*3))
     
     return image
 
