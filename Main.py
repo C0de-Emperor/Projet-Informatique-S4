@@ -1,8 +1,8 @@
-#import Tests
+import Tests
 #import Analysis, Noising
 from Mathematics import *
 
-#Tests.AdaptativeGaussianFilterTest(r'Pictures\Garden_strawberry.jpg')
+#Tests.AdaptativeGaussianFilterTest(r'Pictures/Garden_strawberry.jpg')
 
 #Tests.MedianFilterTest("Pictures/Garden_strawberry.jpg")
 
@@ -22,11 +22,11 @@ from Mathematics import *
 
 #Tests.AnalysisRandomNoisingCurveVSGaussian("Pictures/Garden_strawberry.jpg", amplitude= 40, steps=60)
 
-#f = DiscreteFunctionFromImage(r'Pictures\Garden_strawberry.jpg')
+#f = DiscreteFunctionFromImage(r'Pictures/Garden_strawberry.jpg')
 #source = f.copy()
 #g = GaussianDiscreteFunction(2)
 """
-f = DiscreteFunctionFromImage(r'Pictures\Garden_strawberry.jpg')
+f = DiscreteFunctionFromImage(r'Pictures/Garden_strawberry.jpg')
 source = f.copy()
 g = GaussianDiscreteFunction(2)
 
@@ -47,10 +47,11 @@ g = GaussianDiscreteFunction(2)
 Tests.test_couleur("Pictures/petites_fraises.png")
 """
 
-f = DiscreteFunctionFromImage(r'Pictures\photo_Projet_2 (1).png')
+#f = DiscreteFunctionFromImage(r'Pictures\photo_Projet_2 (1).png')
 
-g = GaussianDiscreteFunction(2)
+#g = GaussianDiscreteFunction(2)
 
-f.show()
+#f.show()
 
-
+if __name__=="__main__":
+    Tests.deconv_wiener("Pictures/mer.jpg")

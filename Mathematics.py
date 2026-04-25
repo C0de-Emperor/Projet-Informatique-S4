@@ -452,20 +452,24 @@ class DiscreteFunction:
     def wienerDeconvolve(self, kernel, K):
         from MathematicsMethods import FFT2Boost, IFFT2
 
-        discrete_function , coordinates = kernel.extend((self.width, self.height)) # on agrandit le kernel à la taille de l'image
+        from math import ceil
+        image, coordinates = self.extend((2 ** ceil(log(self.width, 2)), 2 ** ceil(log(self.height, 2))))
+        discrete_function, raf = kernel.extend((image.width, image.height))  # on agrandit le kernel à la taille de l'image
+
         discrete_function = discrete_function.getCentered()
 
-        G = FFT2Boost(self.kernel) # image en freq
-        H = FFT2Boost(discrete_function.kernel) # noyau en freq
+        G = FFT2(image.kernel) # image en freq
+        H = FFT2(discrete_function.kernel) # noyau en freq
 
-        F = [[0 for i in range(self.width)] for j in range(self.height)]
-        for j in range(self.height):
-            for i in range(self.width):
+        F = [[0 for i in range(image.width)] for j in range(image.height)]
+        for j in range(image.height):
+            for i in range(image.width):
                 F[j][i] = G[j][i] * H[j][i].conjugate() / (abs(H[j][i]) ** 2 + K) #formule
 
         resultat = IFFT2(F) # domaine spatial
 
         deconv = DiscreteFunction(resultat)
+        deconv.resize(coordinates=coordinates)
         #deconv.resizeAmplitude(0, 255)
         return deconv
 
