@@ -81,12 +81,18 @@ class DiscreteFunction:
                 
         return True
     
+    def __str__(self):
+        return "\n".join([str(self.kernel[k]) for k in range(self.height)])
+
     def convolve(self, other: type["DiscreteFunction"]):
         if not isinstance(other, DiscreteFunction):
             raise TypeError
+        
+        hWidth=other.width//2
+        hHeight=other.height//2
 
         g = DiscreteFunction(
-            [[0]*self.width for _ in range(self.height)],
+            [[0 for __ in range(self.width)] for _ in range(self.height)],
             x=self.x,
             y=self.y
         )
@@ -94,7 +100,7 @@ class DiscreteFunction:
             #print((i+1)*100//self.width, "%")
             for j in range(self.height):
                 g[i, j] = sum(
-                    self[i - m, j - n] * other[m, n]
+                    self[i - m+hWidth, j - n+hHeight] * other[m, n]
                     for m in range(other.width)
                     for n in range(other.height)
                 )
@@ -193,10 +199,6 @@ class DiscreteFunction:
 
     def normalize(self):
         norm = sum(sum(row) for row in self.kernel)
-
-        for i in range(self.width):
-            for j in range(self.height):
-                norm+=abs(self[i,j])
         
         if norm == 0:
             raise ValueError("Cannot normalize a kernel with zero sum")
@@ -325,11 +327,11 @@ class DiscreteFunction:
     def getCentered(self):
         kernel=self.kernel.copy()
 
-        if self.width%2==1:
+        """if self.width%2==1:
             for j in range(self.height):
                 kernel[j].append(0)
         if self.height%2==1:
-            kernel.append([0 for k in range(self.width)])
+            kernel.append([0 for k in range(len(kernel[0]))])"""
         
         newDF=DiscreteFunction(kernel)
         
@@ -341,6 +343,9 @@ class DiscreteFunction:
         return DiscreteFunction(mat)
 
     def extend(self, newSize):
+        if newSize[0] <= self.width or newSize[1] <= self.height:
+            return self, (0,0,self.width,self.height)
+
         kernel=self.kernel.copy()
 
         if self.width%2==0:
@@ -449,7 +454,7 @@ class DiscreteFunction:
         self.width=width
         self.height=height
 
-    def wienerDeconvolve(self, kernel, K):
+    def wienerDeconvolve(self, kernel, K): # j'ai déplacé la fonction dans complexdiscretefunction, on peut enlever celle ci je pense
         from MathematicsMethods import FFT2Boost, IFFT2
 
         from math import ceil
@@ -632,6 +637,16 @@ class ComplexDiscreteFunction (DiscreteFunction):
     def copy(self):
         import copy
         return ComplexDiscreteFunction(copy.deepcopy(self.kernel), self.x, self.y)
+
+    def wienerDeconvolve(self, other:"ComplexDiscreteFunction", K):
+        assert self.width == other.width and self.height == other.height
+
+        kernel = [[0 for i in range(self.width)] for j in range(self.height)]
+        for j in range(self.height):
+            for i in range(self.width):
+                kernel[j][i] = self.kernel[j][i] * other.kernel[j][i].conjugate() / (abs(other.kernel[j][i]) ** 2 + K) #formule
+
+        return ComplexDiscreteFunction(kernel)
 
 
 class DiscreteConvertionError(Exception):

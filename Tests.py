@@ -822,10 +822,37 @@ def GaussianNoiseRemoval(discreteFunction:DiscreteFunction, minValue:float, maxV
         canva.paste(getImageFromDiscreteFunction(results[k][0]), (((k%sideSize)*a.width),(k//sideSize)*a.height))
     
     canva.show()
+    canva.save("__pycache__/canva.png")
 
     print(goodSSIMs[-1][3])
     return goodSSIMs[-1][0]
 
+def WienerDeconvolution(discreteFunction:DiscreteFunction, kernel:DiscreteFunction, minK:float, maxK:float, Ksteps:int):
+    a=DiscreteFunctionFromImage("pictures/toto.png")
+
+    c=discreteFunction
+    cf=ComplexDiscreteFunction(fft.fft2(c.kernel).tolist())
+
+    b=kernel
+    (b, raf)=b.extend((c.width, c.height))
+    b=b.getCentered()
+    b.normalize()
+    bf=ComplexDiscreteFunction(fft.fft2(b.kernel).tolist())
+
+    increments=round((maxK-minK)/(Ksteps-1), 4)
+    values=[round(minK+k*increments, 4) for k in range(Ksteps)]
+    print(values)
+
+    sideSize=ceil(sqrt(Ksteps))
+    canva=Image.new("RGB", (c.width*sideSize,  c.height*sideSize))
+    for k in range(len(values)):
+        ef=cf.wienerDeconvolve(bf, values[k])
+        e=ComplexDiscreteFunction(fft.ifft2(ef.kernel).tolist()).getModule(False)
+
+        canva.paste(getImageFromDiscreteFunction(e), (((k%sideSize)*c.width),(k//sideSize)*c.height))
+
+    canva.show()
+    c.show()
 
 
 """
@@ -859,6 +886,7 @@ if __name__ == "__main__":
 #PeriodicNoiseRemovalTest(DiscreteFunctionFromImage("Pictures/rubiks.png"))
 
 #GaussianNoiseRemoval(None, 0.1,1,10)
+
 """
 if __name__=="__main__":
     #MultipleDeconvolutionBoostTest(DiscreteFunctionFromImage("pictures/blue lobster.jpg"))
@@ -896,3 +924,46 @@ for k in range(len(sigmas)):
     ef=cf/df
     e=ComplexDiscreteFunction(fft.ifft2(ef.kernel).tolist()).getModule(False)
     getImageFromDiscreteFunction(e.getCentered()).save(f"__pycache__/blueLobsterDeconvolved{k+4}.png")"""
+
+
+def deconvo(af:ComplexDiscreteFunction, value:float) -> DiscreteFunction:
+    #b=GaussianDiscreteFunction(value)
+    b=DiscreteFunction([[1 for k in range(2*int(value)+1)] for n in range(2*int(value)+1)])
+    (b,raf)=b.extend((af.width, af.height))
+    b2=b.getCentered()
+    b2.normalize()
+
+    b2f=ComplexDiscreteFunction(fft.fft2(b2.kernel).tolist())
+
+    cf=af.wienerDeconvolve(b2f, 0.01)
+    c=ComplexDiscreteFunction(fft.ifft2(cf.kernel).tolist()).getModule(False)
+    
+    return c
+
+
+if __name__ == "__main__":
+    a=DiscreteFunctionFromImage("pictures/photo_2_redim.png")
+    a=a.medianFilter(1)
+    #a=DiscreteFunctionFromImage("pictures/toto.png").convolve(DiscreteFunction([[1/9,1/9,1/9],[1/9,1/9,1/9],[1/9,1/9,1/9]]))
+    af=ComplexDiscreteFunction(fft.fft2(a.kernel).tolist())
+
+    minValue=1
+    maxValue=20
+    steps=20
+
+    increments=round((maxValue-minValue)/(steps-1), 4)
+    values=[round(minValue+k*increments, 4) for k in range(steps)]
+    print(values)
+
+    pool=Pool()
+
+    results=pool.starmap(deconvo, [(af, k) for k in values])
+
+    sideSize=ceil(sqrt(steps))
+    canva=Image.new("RGB", (a.width*sideSize,  a.height*sideSize))
+    for k in range(len(results)):
+        getImageFromDiscreteFunction(results[k]).save(f"__pycache__/multipleResults/{values[k]}.png")
+        canva.paste(getImageFromDiscreteFunction(results[k]), (((k%sideSize)*a.width),(k//sideSize)*a.height))
+    
+    canva.save("__pycache__/canva.png")
+    canva.show()

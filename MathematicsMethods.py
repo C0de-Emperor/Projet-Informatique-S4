@@ -232,10 +232,10 @@ def IFFT2(kernel:list[list[complex]], completionMode:int=2) -> list[list[float]]
 def getEcartRel(ref:list, test:list) -> float:
     ecartMoy=0
     for k in range(len(ref)):
-        try:
+        if type(ref[k]) == int or type(ref[k]) == float or type(ref[k]) == complex:
             if ref[k]!=0: ecartMoy+=abs((ref[k]-test[k])/ref[k])
             else: ecartMoy+=abs(test[k])
-        except: 
+        else: 
             ecartMoy+=getEcartRel(ref[k], test[k])
     return float(ecartMoy)/len(ref)
 
@@ -249,12 +249,12 @@ def fftShiftIndex(width, height, item:tuple):
         if nItem[0] < hWidth:
             return (nItem[0]+hWidth, nItem[1]+hHeight)
         else:
-            return (nItem[0]-hWidth, nItem[1]+hHeight)
+            return (nItem[0]-hWidth-1, nItem[1]+hHeight)
     else:
         if nItem[0] < hWidth:
-            return (nItem[0]+hWidth, nItem[1]-hHeight)
+            return (nItem[0]+hWidth, nItem[1]-hHeight-1)
         else:
-            return (nItem[0]-hWidth, nItem[1]-hHeight)
+            return (nItem[0]-hWidth-1, nItem[1]-hHeight-1)
 
 def getStatistics(list:list) -> tuple[float]:
     mean=sum(list)/len(list)
